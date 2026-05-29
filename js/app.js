@@ -532,12 +532,27 @@ document.getElementById("saveWorkshopTaskBtn");
 
 addWorkshopTaskBtn.addEventListener("click", ()=>{
 
+    document.getElementById(
+        "taskTitle"
+    ).value = "";
+
+    document.getElementById(
+        "taskVehicle"
+    ).value = "";
+
+    document.getElementById(
+        "taskDelivery"
+    ).value = "";
+
+    document.getElementById(
+        "taskStatus"
+    ).value = "En proceso";
+
     workshopModal.classList.remove(
         "hidden"
     );
 
 });
-
 /* ========================================
    CLOSE MODAL
 ======================================== */
