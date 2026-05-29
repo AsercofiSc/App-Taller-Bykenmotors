@@ -356,6 +356,24 @@ function createVehicleCard(name, target, year, plate, color, owner, date, status
         updateCounts();
     });
 
+    // Botón "→ Servicio" solo en tarjetas de Ingresaron
+    if(target.id === "incomingList"){
+        const moveBtn = document.createElement("button");
+        moveBtn.className = "vp-move-service";
+        moveBtn.textContent = "→ Servicio";
+        moveBtn.addEventListener("click", ()=>{
+            const statusEl = card.querySelector(".vp-card-status");
+            statusEl.className = "vp-card-status status-servicio";
+            statusEl.textContent = "En servicio";
+            document.getElementById("serviceList").appendChild(card);
+            moveBtn.remove();
+            updateCounts();
+            // Auto-crear tarea en Taller
+            autoAddWorkshopTask(name);
+        });
+        card.querySelector(".vp-card-right").prepend(moveBtn);
+    }
+
     target.appendChild(card);
     updateCounts();
 }
@@ -525,6 +543,90 @@ document.getElementById("closeWorkshopModal");
 
 const saveWorkshopTaskBtn =
 document.getElementById("saveWorkshopTaskBtn");
+/* ========================================
+   CUSTOM STATUS SELECT
+======================================== */
+
+const taskStatusBtn =
+document.getElementById(
+    "taskStatusBtn"
+);
+
+const taskStatusOptions =
+document.getElementById(
+    "taskStatusOptions"
+);
+
+const taskStatusInput =
+document.getElementById(
+    "taskStatus"
+);
+
+const statusOptions =
+document.querySelectorAll(
+    ".status-option"
+);
+
+/* OPEN MENU */
+
+taskStatusBtn.addEventListener(
+    "click",
+    ()=>{
+
+        taskStatusOptions.classList.toggle(
+            "hidden"
+        );
+
+    }
+);
+
+/* SELECT OPTION */
+
+statusOptions.forEach(option=>{
+
+    option.addEventListener("click", ()=>{
+
+        const value = option.textContent.trim();
+
+        taskStatusBtn.textContent = value;
+        taskStatusInput.value = value;
+
+        taskStatusBtn.classList.remove(
+            "active-status",
+            "pending-status",
+            "completed-status"
+        );
+
+        if(value === "En proceso") taskStatusBtn.classList.add("active-status");
+        if(value === "Pendiente")  taskStatusBtn.classList.add("pending-status");
+        if(value === "Completado") taskStatusBtn.classList.add("completed-status");
+
+        taskStatusOptions.classList.add("hidden");
+
+    });
+
+});
+
+/* CLOSE OUTSIDE */
+
+document.addEventListener(
+    "click",
+    (e)=>{
+
+        if(
+            !e.target.closest(
+                ".custom-status-select"
+            )
+        ){
+
+            taskStatusOptions.classList.add(
+                "hidden"
+            );
+
+        }
+
+    }
+);
 
 /* ========================================
    OPEN MODAL
@@ -546,9 +648,11 @@ addWorkshopTaskBtn.addEventListener("click", ()=>{
         "taskDelivery"
     ).value = "";
 
-    document.getElementById(
-        "taskStatus"
-    ).value = "En proceso";
+    taskStatusInput.value = "En proceso";
+    taskStatusBtn.textContent = "En proceso";
+    taskStatusBtn.classList.remove("pending-status", "completed-status");
+    taskStatusBtn.classList.add("active-status");
+
 
     workshopModal.classList.remove(
         "hidden"

@@ -731,21 +731,42 @@
                 id="taskDelivery"
             >
 
-            <select id="taskStatus">
+            <div class="custom-status-select">
 
-                <option>
-                    En proceso
-                </option>
+    <button
+        type="button"
+        id="taskStatusBtn"
+        class="status-select-btn active-status"
+    >
+        En proceso
+    </button>
 
-                <option>
-                    Pendiente
-                </option>
+    <div
+        id="taskStatusOptions"
+        class="status-options hidden"
+    >
 
-                <option>
-                    Completado
-                </option>
+        <div class="status-option">
+            En proceso
+        </div>
 
-            </select>
+        <div class="status-option">
+            Pendiente
+        </div>
+
+        <div class="status-option">
+            Completado
+        </div>
+
+    </div>
+
+</div>
+
+<input
+    type="hidden"
+    id="taskStatus"
+    value="En proceso"
+/>
 
         </div>
 
