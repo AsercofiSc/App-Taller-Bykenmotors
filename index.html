@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta name="theme-color" content="#f5f5f7">
+
+    <meta name="apple-mobile-web-app-capable" content="yes">
+
+    <meta name="mobile-web-app-capable" content="yes">
+
+    <title>Taller App</title>
+
+    <link rel="stylesheet" href="css/style.css">
+
+</head>
+
+<body>
+
+    <!-- LOADER -->
+
+    <div class="loader-screen">
+
+        <div class="loader-box">
+
+            <div class="loader-circle"></div>
+
+            <h2>Iniciando Taller...</h2>
+
+        </div>
+
+    </div>
+
+    <!-- LOGIN -->
+
+    <main class="login-page">
+
+        <div class="background-overlay"></div>
+
+        <section class="login-wrapper">
+
+            <div class="login-card">
+
+                <div class="logo-section">
+
+                    <h1>TALLER APP</h1>
+
+                    <p>
+                        Gestión inteligente para talleres
+                    </p>
+
+                </div>
+
+                <form class="login-form">
+
+                    <div class="input-group">
+
+                        <label>
+                            Correo electrónico
+                        </label>
+
+                        <input
+                            type="email"
+                            placeholder="correo@empresa.com"
+                        >
+
+                    </div>
+
+                    <div class="input-group">
+
+                        <label>
+                            Contraseña
+                        </label>
+
+                        <input
+                            type="password"
+                            placeholder="••••••••"
+                        >
+
+                    </div>
+
+                    <button type="submit">
+
+                        Ingresar
+
+                    </button>
+
+                    <p class="register-link">
+
+                        ¿No tienes cuenta?
+
+                        <span id="openRegister">
+                            Crear cuenta
+                        </span>
+
+                    </p>
+
+                </form>
+
+            </div>
+
+        </section>
+
+    </main>
+<!-- PANTALLA TALLER -->
+
+<div id="workshopPage" class="workshop-page hidden">
+
+    <div class="inventory-header">
+
+        <button
+            id="backFromWorkshop"
+            class="back-btn"
+        >
+            ←
+        </button>
+
+        <div>
+
+            <h1>Taller</h1>
+
+            <p>
+                Gestión rápida del trabajo diario
+            </p>
+
+        </div>
+
+    </div>
+
+    <!-- CARDS -->
+
+    <div class="workshop-grid">
+
+        <div class="workshop-card">
+
+            <span class="workshop-label">
+                Vehículos activos
+            </span>
+
+            <h2 id="activeCars">
+                0
+            </h2>
+
+        </div>
+
+        <div class="workshop-card">
+
+            <span class="workshop-label">
+                Trabajos pendientes
+            </span>
+
+            <h2 id="pendingJobs">
+                0
+            </h2>
+
+        </div>
+
+    </div>
+
+    <!-- LISTA -->
+
+ <div class="workshop-section">
+
+    <div class="section-header">
+
+        <h2>
+            Trabajos del día
+        </h2>
+
+        <button id="addWorkshopTaskBtn">
+            +
+        </button>
+
+    </div>
+
+    <div
+        id="workshopTasks"
+        class="workshop-tasks"
+    >
+
+    </div>
+
+</div>
+
+</div>
+    <!-- MODAL REGISTRO -->
+
+    <div class="register-modal" id="registerModal">
+
+        <div class="register-card">
+
+            <h2>Crear Cuenta</h2>
+
+            <input
+                type="email"
+                id="registerEmail"
+                placeholder="Correo"
+            >
+
+            <input
+                type="password"
+                id="registerPassword"
+                placeholder="Contraseña"
+            >
+
+            <button id="registerBtn">
+
+                Registrar
+
+            </button>
+
+        </div>
+
+    </div>
+
+    <!-- DASHBOARD -->
+
+    <section class="dashboard hidden" id="dashboard">
+
+     <div class="dashboard-content">
+    
+    <div class="top-header">
+        <span class="powered-text">Powered by Lumina</span>
+        <h1>Bienvenido A Tu Taller</h1>
+        <p>Panel principal del taller</p>
+    </div>
+<!-- Notificacion -->
+    <section class="notifications-section">
+        <div class="section-header">
+            <h2>Nuevas notificaciones</h2>
+            <span class="see-all">Ver todas</span>
+        </div>
+        <div class="notifications-container">
+    <div class="notification-card">
+        <div class="card-icon-minimal">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="22" height="18" rx="2" ry="2"></rect><path d="M7 7h10"></path><path d="M7 11h10"></path><path d="M7 15h10"></path></svg>
+        </div>
+        <h3>Vehículos</h3>
+        <p>Nuevo Tsuru registrado en taller.</p>
+    </div>
+    <div class="notification-card">
+        <div class="card-icon-minimal">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+        </div>
+        <h3>Clientes</h3>
+        <p>Juan Pérez aceptó el presupuesto.</p>
+    </div>
+    <div class="notification-card">
+        <div class="card-icon-minimal">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a2 2 0 0 1 2.83 0l.3.3a2 2 0 0 1 0 2.83l-3.77 3.77a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a2 2 0 0 1 2.83 0l.3.3a2 2 0 0 1 0 2.83l-3.77 3.77a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a2 2 0 0 1 2.83 0l.3.3a2 2 0 0 1 0 2.83l-3.77 3.77a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a2 2 0 0 1 2.83 0l.3.3a2 2 0 0 1 0 2.83l-3.77 3.77a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a2 2 0 0 1 2.83 0l.3.3a2 2 0 0 1 0 2.83l-3.77 3.77a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a2 2 0 0 1 2.83 0l.3.3a2 2 0 0 1 0 2.83l-3.77 3.77a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a2 2 0 0 1 2.83 0l.3.3a2 2 0 0 1 0 2.83l-3.77 3.77a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a2 2 0 0 1 2.83 0l.3.3a2 2 0 0 1 0 2.83l-3.77 3.77a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a2 2 0 0 1 2.83 0l.3.3a2 2 0 0 1 0 2.83l-3.77 3.77a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a2 2 0 0 1 2.83 0l.3.3a2 2 0 0 1 0 2.83l-3.77 3.77a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a2 2 0 0 1 2.83 0l.3.3a2 2 0 0 1 0 2.83l-3.77 3.77a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0L2.93 18.07a2 2 0 0 1-2.83 0L.1 17.77a2 2 0 0 1 0-2.83L3.87 11.17a1 1 0 0 0 0-1.4L2.27 8.17a1 1 0 0 0-1.4 0L.87 8.17a2 2 0 0 1-2.83 0l-.3-.3a2 2 0 0 1 0-2.83l3.77-3.77a1 1 0 0 0 0-1.4L1.6 1.6a1 1 0 0 0-1.4 0L.87.87a2 2 0 0 1 0-2.83l.3-.3a2 2 0 0 1 2.83 0l3.77 3.77a1 1 0 0 0 1.4 0l1.6-1.6a1 1 0 0 0 0-1.4l1.6 1.6a1 1 0 0 0 1.4 0z"></path></svg>
+        </div>
+        <h3>Órdenes</h3>
+        <p>Orden #402 lista para entrega.</p>
+    </div>
+</div>
+    </section>
+
+    <section class="activity-section">
+    <div class="section-header">
+        <h2>Actividad del taller</h2>
+    </div>
+    
+    <div class="activity-list grouped-list">
+        
+        <div class="activity-item grouped-item">
+            <div class="activity-icon-minimal">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+            </div>
+            <div class="info">
+                <p class="title">Entrada de vehículo</p>
+                <p class="subtitle">Nissan Tsuru - Pendiente revisión</p>
+            </div>
+            <span class="time grouped-time">10m</span>
+        </div>
+
+        <div class="activity-item grouped-item">
+            <div class="activity-icon-minimal">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.89 1.45l8 4A2 2 0 0 1 22 7.24v9.52a2 2 0 0 1-1.11 1.79l-8 4a2 2 0 0 1-1.78 0l-8-4A2 2 0 0 1 2 16.76V7.24a2 2 0 0 1 1.11-1.79l8-4a2 2 0 0 1 1.78 0z"></path><polyline points="2.32 6.16 12 11 21.68 6.16"></polyline><line x1="12" y1="22.76" x2="12" y2="11"></line></svg>
+            </div>
+            <div class="info">
+                <p class="title">Refacciones agotadas</p>
+                <p class="subtitle">Filtro de aceite - Solicitar proveedor</p>
+            </div>
+            <span class="time grouped-time">1h</span>
+        </div>
+        
+    </div>
+</section>
+        <!-- BOTTOM NAV -->
+
+        <nav class="bottom-nav">
+
+            <div class="nav-item">
+
+                Vehículos
+
+            </div>
+
+            <div class="nav-item">
+
+                Clientes
+
+            </div>
+
+            <div class="nav-item">
+
+                Inventario
+
+            </div>
+            <div class="nav-item">
+                 Taller
+</div>
+
+        </nav>
+
+    </section>
+    <!-- PANTALLA VEHICULOS -->
+
+<div id="vehiclesPage" class="vehicles-page hidden">
+
+    <!-- HEADER -->
+    <div class="vp-header">
+        <button id="backDashboard" class="vp-back">←</button>
+        <div>
+            <h1 class="vp-title">Bitácora</h1>
+            <p class="vp-subtitle">Gestión de vehículos</p>
+        </div>
+    </div>
+
+    <!-- RESUMEN -->
+<div class="vp-stats">
+    <div class="vp-stat-card">
+        <div class="vp-stat-dot dot-blue"></div>
+        <span class="vp-stat-label">Ingresaron</span>
+        <strong id="incomingCount">0</strong>
+    </div>
+    <div class="vp-stat-card">
+        <div class="vp-stat-dot dot-orange"></div>
+        <span class="vp-stat-label">En servicio</span>
+        <strong id="serviceCount">0</strong>
+    </div>
+    <div class="vp-stat-card">
+        <div class="vp-stat-dot dot-green"></div>
+        <span class="vp-stat-label">Listos</span>
+        <strong id="readyCount">0</strong>
+    </div>
+    <div class="vp-stat-card">
+        <div class="vp-stat-dot dot-purple"></div>
+        <span class="vp-stat-label">Entregados</span>
+        <strong id="doneCount">0</strong>
+    </div>
+</div>
+
+    <!-- LISTAS -->
+    <div class="vp-sections">
+
+        <div class="vp-section">
+            <div class="vp-section-header blue-accent">
+                <div class="vp-section-left">
+                    <div class="vp-dot blue-dot"></div>
+                    <h2>Ingresaron</h2>
+                </div>
+                <button class="add-btn vp-add" data-target="incomingList">+</button>
+            </div>
+            <div id="incomingList" class="vp-list"></div>
+        </div>
+
+        <div class="vp-section">
+            <div class="vp-section-header orange-accent">
+                <div class="vp-section-left">
+                    <div class="vp-dot orange-dot"></div>
+                    <h2>En servicio</h2>
+                </div>
+                <button class="add-btn vp-add" data-target="serviceList">+</button>
+            </div>
+            <div id="serviceList" class="vp-list"></div>
+        </div>
+
+        <div class="vp-section">
+            <div class="vp-section-header green-accent">
+                <div class="vp-section-left">
+                    <div class="vp-dot green-dot"></div>
+                    <h2>Listos para entrega</h2>
+                </div>
+                <button class="add-btn vp-add" data-target="readyList">+</button>
+            </div>
+            <div id="readyList" class="vp-list"></div>
+        </div>
+
+        <div class="vp-section">
+            <div class="vp-section-header purple-accent">
+                <div class="vp-section-left">
+                    <div class="vp-dot purple-dot"></div>
+                    <h2>Entregados</h2>
+                </div>
+                <button class="add-btn vp-add" data-target="doneList">+</button>
+            </div>
+            <div id="doneList" class="vp-list"></div>
+        </div>
+
+    </div>
+</div>
+<!-- PANTALLA CLIENTES -->
+
+<div id="clientsPage" class="clients-page hidden">
+
+    <!-- HEADER -->
+    <div class="cp-header">
+        <button id="backFromClients" class="vp-back">←</button>
+        <div>
+            <h1 class="vp-title">Clientes</h1>
+            <p class="vp-subtitle">Gestión de clientes del taller</p>
+        </div>
+    </div>
+
+    <!-- BUSCADOR -->
+    <div class="cp-search">
+        <input type="text" id="clientSearch" placeholder="🔍 Buscar cliente...">
+    </div>
+
+    <!-- RECIENTES -->
+    <div class="cp-section">
+        <div class="cp-section-header">
+            <div class="vp-section-left">
+                <div class="vp-dot dot-blue"></div>
+                <h2>Recientes</h2>
+            </div>
+            <button class="cp-add" id="openClientModal">+</button>
+        </div>
+        <div id="clientsList" class="cp-list"></div>
+    </div>
+
+    <!-- PROXIMOS A SERVICIO -->
+    <div class="cp-section">
+        <div class="cp-section-header">
+            <div class="vp-section-left">
+                <div class="vp-dot dot-orange"></div>
+                <h2>Próximos a servicio</h2>
+            </div>
+            <button class="cp-add" id="openServiceClientModal">+</button>
+        </div>
+        <div id="serviceClientsList" class="cp-list"></div>
+    </div>
+
+    <!-- CONTACTOS EXTERNOS -->
+    <div class="cp-section">
+        <div class="cp-section-header">
+            <div class="vp-section-left">
+                <div class="vp-dot dot-green"></div>
+                <h2>Contactos externos</h2>
+            </div>
+            <button class="cp-add" id="openExternalClientModal">+</button>
+        </div>
+        <div id="externalClientsList" class="cp-list"></div>
+    </div>
+
+</div>
+<!-- PANTALLA INVENTARIO -->
+
+<div id="inventoryPage" class="inventory-page hidden">
+
+    <div class="inventory-header">
+
+        <button
+            id="backFromInventory"
+            class="back-btn"
+        >
+            ←
+        </button>
+
+        <div>
+
+            <h1>Inventario</h1>
+
+            <p>
+                Control de refacciones y stock
+            </p>
+
+        </div>
+
+    </div>
+
+    <!-- STATS -->
+
+    <div class="inventory-stats">
+
+        <div class="inventory-stat-card">
+
+            <span>Total</span>
+
+            <h2 id="totalProducts">
+                0
+            </h2>
+
+        </div>
+
+        <div class="inventory-stat-card low-stock">
+
+            <span>Bajo stock</span>
+
+            <h2 id="lowStockCount">
+                0
+            </h2>
+
+        </div>
+
+    </div>
+
+    <!-- SEARCH -->
+
+    <div class="inventory-search">
+
+        <input
+            type="text"
+            id="inventorySearch"
+            placeholder="Buscar producto..."
+        >
+
+    </div>
+
+    <!-- LIST -->
+
+    <div
+        id="inventoryList"
+        class="inventory-list"
+    ></div>
+
+    <!-- FLOAT BUTTON -->
+
+    <button
+        id="openInventoryModal"
+        class="floating-client-btn"
+    >
+        +
+    </button>
+
+</div>
+<!-- MODAL CLIENTE -->
+
+<div id="clientModal" class="client-modal hidden">
+    <div class="client-modal-card">
+        <div class="vehicle-modal-top">
+            <div class="modal-title-row">
+                <button id="closeClientModal" class="modal-back-btn">←</button>
+                <h2>Nuevo cliente</h2>
+            </div>
+        </div>
+        <div class="vehicle-form">
+            <input type="text" id="clientName" placeholder="Nombre completo">
+            <input type="text" id="clientPhone" placeholder="Teléfono">
+            <input type="email" id="clientEmail" placeholder="Correo electrónico">
+            <input type="text" id="clientVehicle" placeholder="Vehículo asociado">
+            <select id="clientSection">
+                <option value="recent">Reciente</option>
+                <option value="service">Próximo a servicio</option>
+                <option value="external">Contacto externo</option>
+            </select>
+            <select id="clientSource">
+                <option value="directo">Directo</option>
+                <option value="whatsapp">WhatsApp</option>
+                <option value="correo">Correo</option>
+                <option value="instagram">Instagram</option>
+                <option value="facebook">Facebook</option>
+            </select>
+        </div>
+        <button id="saveClientBtn">Guardar cliente</button>
+    </div>
+</div>
+<!-- MODAL INVENTARIO -->
+<!-- MODAL INVENTARIO -->
+<div id="inventoryModal" class="client-modal hidden">
+    <div class="client-modal-card inv-modal-card">
+
+        <div class="vehicle-modal-top">
+            <div class="modal-title-row">
+                <button id="closeInventoryModal" class="modal-back-btn">←</button>
+                <h2>Nuevo producto</h2>
+            </div>
+        </div>
+
+        <div class="vehicle-form">
+            <input type="text" id="inventoryName" placeholder="Nombre del producto">
+
+            <select id="inventoryCategory">
+                <option value="" disabled selected>Categoría</option>
+                <option value="Filtros">🔧 Filtros</option>
+                <option value="Aceites">🛢️ Aceites y lubricantes</option>
+                <option value="Frenos">⚙️ Frenos</option>
+                <option value="Suspensión">🔩 Suspensión</option>
+                <option value="Eléctrico">⚡ Eléctrico</option>
+                <option value="Motor">🔥 Motor</option>
+                <option value="Transmisión">🔄 Transmisión</option>
+                <option value="Carrocería">🚗 Carrocería</option>
+                <option value="Otro">📦 Otro</option>
+            </select>
+
+            <input type="number" id="inventoryStock" placeholder="Cantidad en stock" min="0">
+            <input type="number" id="inventoryPrice" placeholder="Precio unitario ($)" min="0">
+            <input type="email" id="inventoryAlertEmail" placeholder="📧 Correo para alertas">
+        </div>
+
+        <button id="saveInventoryBtn">Guardar producto</button>
+
+    </div>
+</div>
+<!-- MODAL VEHICULO -->
+
+<div id="vehicleModal" class="vehicle-modal hidden">
+
+    <div class="vehicle-modal-card">
+<div class="vehicle-modal-top">
+
+    <div class="modal-title-row">
+
+        <button
+            id="closeVehicleModal"
+            class="modal-back-btn"
+        >
+            ←
+        </button>
+
+        <h2>Nuevo vehículo</h2>
+
+    </div>
+
+</div>
+
+        <div class="vehicle-form">
+
+            <input
+                type="text"
+                id="vehicleBrand"
+                placeholder="Marca"
+            >
+
+            <input
+                type="text"
+                id="vehicleModel"
+                placeholder="Modelo"
+            >
+
+            <input
+                type="text"
+                id="vehicleYear"
+                placeholder="Año"
+            >
+
+            <input
+                type="text"
+                id="vehiclePlate"
+                placeholder="Placa"
+            >
+
+            <input
+                type="text"
+                id="vehicleColor"
+                placeholder="Color"
+            >
+            <input
+                type="text"
+                id="vehicleOwner"
+                placeholder="Nombre del dueño"
+>
+
+        </div>
+
+        <button id="saveVehicleBtn">
+
+            Guardar vehículo
+
+        </button>
+
+    </div>
+
+</div>
+   
+<div
+    class="vehicle-modal hidden"
+    id="workshopModal"
+>
+
+    <div class="vehicle-modal-card">
+
+        <div class="vehicle-modal-top">
+
+            <h2>
+                Nueva tarea
+            </h2>
+
+            <button
+                id="closeWorkshopModal"
+            >
+                ✕
+            </button>
+
+        </div>
+
+        <div class="vehicle-form">
+
+            <input
+                type="text"
+                id="taskTitle"
+                placeholder="Trabajo"
+            >
+
+            <input
+                type="text"
+                id="taskVehicle"
+                placeholder="Vehículo"
+            >
+
+            <input
+                type="date"
+                id="taskDelivery"
+            >
+
+            <select id="taskStatus">
+
+                <option>
+                    En proceso
+                </option>
+
+                <option>
+                    Pendiente
+                </option>
+
+                <option>
+                    Completado
+                </option>
+
+            </select>
+
+        </div>
+
+        <button
+            id="saveWorkshopTaskBtn"
+        >
+            Guardar tarea
+        </button>
+
+    </div>
+
+</div>
+<script src="js/app.js"></script>
+</body>
+
+</html>
