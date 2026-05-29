@@ -540,6 +540,8 @@ addWorkshopTaskBtn.addEventListener("click", ()=>{
         "taskVehicle"
     ).value = "";
 
+    loadWorkshopVehicles();
+
     document.getElementById(
         "taskDelivery"
     ).value = "";
@@ -576,10 +578,18 @@ saveWorkshopTaskBtn.addEventListener("click", ()=>{
         "taskTitle"
     ).value;
 
-    const vehicle =
-    document.getElementById(
-        "taskVehicle"
-    ).value;
+   const selectedVehicle =
+document.getElementById(
+    "taskVehicleSelect"
+).value;
+
+const manualVehicle =
+document.getElementById(
+    "taskVehicle"
+).value;
+
+const vehicle =
+selectedVehicle || manualVehicle;
 
     const delivery =
     document.getElementById(
@@ -737,7 +747,47 @@ function createWorkshopTask(
 /* ========================================
    UPDATE STYLE
 ======================================== */
+function loadWorkshopVehicles(){
 
+    const select =
+    document.getElementById(
+        "taskVehicleSelect"
+    );
+
+    select.innerHTML = `
+        <option value="">
+            Seleccionar vehículo
+        </option>
+    `;
+
+    const vehicleCards =
+    document.querySelectorAll(
+        ".vp-card"
+    );
+
+    vehicleCards.forEach(card=>{
+
+        const name =
+        card.querySelector(
+            ".vp-card-name"
+        ).textContent;
+
+        const option =
+        document.createElement(
+            "option"
+        );
+
+        option.value = name;
+
+        option.textContent = name;
+
+        select.appendChild(
+            option
+        );
+
+    });
+
+}
 function updateTaskStyle(
     element,
     status
