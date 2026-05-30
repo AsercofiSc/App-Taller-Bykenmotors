@@ -349,7 +349,10 @@ saveVehicleBtn.addEventListener("click", ()=>{
         }
     }
 
-    vehicleModal.classList.add("hidden");
+   vehicleModal.classList.add("hidden");
+
+    addNotification("vehicle", "Vehículo", `${brand} ${model} registrado en taller`);
+    addActivity("vehicle", "Entrada de vehículo", `${brand} ${model} · ${plate || "Sin placa"}`);
 
 });
 
@@ -399,6 +402,8 @@ function createVehicleCard(name, target, year, plate, color, owner, date, status
             
             // Auto-crear tarea en Taller (Ahora sí funcional)
             autoAddWorkshopTask(name);
+            addNotification("vehicle", "En servicio", `${name} pasó a servicio`);
+            addActivity("vehicle", "Vehículo a servicio", name);
         });
         card.querySelector(".vp-card-right").prepend(moveBtn);
     }
@@ -586,6 +591,10 @@ saveClientBtn.addEventListener("click", ()=>{
     }
 
     clientModal.classList.add("hidden");
+
+    addNotification("client", "Cliente", `${name} registrado en taller`);
+    addActivity("client", "Nuevo cliente", name);
+
 });
 
 /* =========================
@@ -811,6 +820,10 @@ saveWorkshopTaskBtn.addEventListener("click", ()=>{
     document.getElementById("taskVehicle").value  = "";
     document.getElementById("taskDelivery").value = "";
     workshopModal.classList.add("hidden");
+
+    addNotification("task", "Taller", `Tarea "${title}" guardada`);
+    addActivity("task", "Nueva tarea de taller", `${title} — ${vehicle}`);
+
 });
 
 /* ========================================
@@ -1208,7 +1221,11 @@ if(_saveInvBtn){
         priceEl.value = "";
         if(emailEl) emailEl.value = "";
 
-        inventoryModal.classList.add("hidden");
+       inventoryModal.classList.add("hidden");
+
+        addNotification("inventory", "Inventario", `${name} agregado (${stock} uds)`);
+        addActivity("inventory", "Producto en stock", `${name} · $${price}`);
+
     });
 }
 
@@ -1336,3 +1353,69 @@ if(_invSearch){
         });
     });
 }
+/* ========================================
+   SISTEMA DE NOTIFICACIONES Y ACTIVIDAD
+======================================== */
+
+(function initDashboard(){
+    const nc = document.querySelector(".notifications-container");
+    const al = document.querySelector(".activity-list");
+    if(nc) nc.innerHTML = "";
+    if(al) al.innerHTML = "";
+})();
+
+const APP_ICONS = {
+    vehicle:   `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="22" height="18" rx="2"/><path d="M7 7h10"/><path d="M7 11h10"/><path d="M7 15h10"/></svg>`,
+    client:    `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`,
+    inventory: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.89 1.45l8 4A2 2 0 0 1 22 7.24v9.52a2 2 0 0 1-1.11 1.79l-8 4a2 2 0 0 1-1.78 0l-8-4A2 2 0 0 1 2 16.76V7.24a2 2 0 0 1 1.11-1.79l8-4a2 2 0 0 1 1.78 0z"/></svg>`,
+    task:      `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>`
+};
+
+function getTimeAgo(ts){
+    const s = Math.floor((Date.now() - ts) / 1000);
+    if(s < 60)    return "ahora";
+    if(s < 3600)  return Math.floor(s/60)   + "m";
+    if(s < 86400) return Math.floor(s/3600) + "h";
+    return Math.floor(s/86400) + "d";
+}
+
+function addNotification(iconKey, title, message){
+    const container = document.querySelector(".notifications-container");
+    if(!container) return;
+    const card = document.createElement("div");
+    card.className = "notification-card";
+    card.innerHTML = `
+        <div class="card-icon-minimal">${APP_ICONS[iconKey]}</div>
+        <h3>${title}</h3>
+        <p>${message}</p>
+    `;
+    container.prepend(card);
+    if("Notification" in window && Notification.permission === "granted"){
+        new Notification("🔔 " + title + " — Taller App", { body: message });
+    }
+}
+
+function addActivity(iconKey, title, subtitle){
+    const list = document.querySelector(".activity-list");
+    if(!list) return;
+    const ts = Date.now();
+    const item = document.createElement("div");
+    item.className = "activity-item grouped-item";
+    item.dataset.time = ts;
+    item.innerHTML = `
+        <div class="activity-icon-minimal">${APP_ICONS[iconKey]}</div>
+        <div class="info">
+            <p class="title">${title}</p>
+            <p class="subtitle">${subtitle}</p>
+        </div>
+        <span class="time grouped-time">ahora</span>
+    `;
+    list.prepend(item);
+}
+
+setInterval(()=>{
+    document.querySelectorAll(".activity-item[data-time]").forEach(item => {
+        const t = item.querySelector(".time");
+        if(t) t.textContent = getTimeAgo(parseInt(item.dataset.time));
+    });
+}, 30000);
