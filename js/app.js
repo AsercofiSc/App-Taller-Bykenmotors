@@ -289,7 +289,7 @@ closeVehicleModal.addEventListener("click", ()=>{
 });
 
 /* =========================
-   SAVE VEHICLE
+   SAVE VEHICLE (CON AUTO-REGISTRO DE CLIENTE)
 ========================= */
 
 saveVehicleBtn.addEventListener("click", ()=>{
@@ -299,7 +299,7 @@ saveVehicleBtn.addEventListener("click", ()=>{
     const year = document.getElementById("vehicleYear").value;
     const plate = document.getElementById("vehiclePlate").value;
     const color = document.getElementById("vehicleColor").value;
-    const owner = document.getElementById("vehicleOwner").value;
+    const owner = document.getElementById("vehicleOwner").value.trim();
 
     if(!brand || !model) return;
 
@@ -314,12 +314,40 @@ saveVehicleBtn.addEventListener("click", ()=>{
 
     const info = targets[currentTarget.id] || { label: "Ingresado", cls: "status-ingresado" };
 
+    // 1. Crear la tarjeta del vehículo
     createVehicleCard(
         `${brand} ${model}`,
         currentTarget,
         year, plate, color, owner, today,
         info.label, info.cls
     );
+
+    // 2. AUTO-REGISTRO DE CLIENTE (Si es que no existe ya)
+    if (owner) {
+        const clientsList = document.getElementById("clientsList");
+        
+        // Verificar si el cliente ya existe en la lista buscando por texto
+        let clientExists = false;
+        const existingNames = clientsList.querySelectorAll(".cp-name");
+        existingNames.forEach(nameEl => {
+            if (nameEl.textContent.toLowerCase() === owner.toLowerCase()) {
+                clientExists = true;
+            }
+        });
+
+        // Si no existe, lo agregamos automáticamente a la lista de "Recientes"
+        if (!clientExists) {
+            // Pasamos: name, phone (vacio), email (vacio), vehicle, source, target
+            createClientCard(
+                owner, 
+                "", 
+                "", 
+                `${brand} ${model} (${plate || "Sin placa"})`, 
+                "directo", 
+                clientsList
+            );
+        }
+    }
 
     vehicleModal.classList.add("hidden");
 
@@ -368,7 +396,8 @@ function createVehicleCard(name, target, year, plate, color, owner, date, status
             document.getElementById("serviceList").appendChild(card);
             moveBtn.remove();
             updateCounts();
-            // Auto-crear tarea en Taller
+            
+            // Auto-crear tarea en Taller (Ahora sí funcional)
             autoAddWorkshopTask(name);
         });
         card.querySelector(".vp-card-right").prepend(moveBtn);
@@ -376,6 +405,24 @@ function createVehicleCard(name, target, year, plate, color, owner, date, status
 
     target.appendChild(card);
     updateCounts();
+} // Aquí cierra tu función createVehicleCard original
+
+/* ========================================
+   FUNCIÓN COMPLEMENTARIA: AUTO ADD WORKSHOP TASK
+======================================== */
+function autoAddWorkshopTask(vehicleName) {
+    // Definimos una fecha de entrega estimada (por ejemplo, 2 días a partir de hoy)
+    const entregaEstimada = new Date();
+    entregaEstimada.setDate(entregaEstimada.getDate() + 2);
+    const fechaFormateada = entregaEstimada.toLocaleDateString("es-MX");
+
+    // Creamos la tarea en el taller de manera automatizada
+    createWorkshopTask(
+        "Diagnóstico y Servicio Técnico", // Título por defecto de la tarea
+        vehicleName,                     // Nombre del vehículo que viene de la tarjeta
+        fechaFormateada,                  // Fecha tentativa
+        "En proceso"                     // Estado inicial en el taller
+    );
 }
 
 /* =========================
@@ -403,77 +450,70 @@ const saveClientBtn = document.getElementById("saveClientBtn");
 const clientsList = document.getElementById("clientsList");
 const serviceClientsList = document.getElementById("serviceClientsList");
 const externalClientsList = document.getElementById("externalClientsList");
+let editingClientCard = null;
+
+function openClientModalForNew(section = "recent") {
+    editingClientCard = null;
+    document.querySelector("#clientModal h2").textContent = "Nuevo cliente";
+    document.getElementById("clientName").value    = "";
+    document.getElementById("clientPhone").value   = "";
+    document.getElementById("clientEmail").value   = "";
+    document.getElementById("clientVehicle").value = "";
+    document.getElementById("clientSection").value = section;
+    clientModal.classList.remove("hidden");
+}
 
 document.getElementById("openClientModal")
-.addEventListener("click", ()=>{
-    clientModal.classList.remove("hidden");
-    document.getElementById("clientName").value = "";
-    document.getElementById("clientPhone").value = "";
-    document.getElementById("clientEmail").value = "";
-    document.getElementById("clientVehicle").value = "";
-});
+    .addEventListener("click", ()=> openClientModalForNew("recent"));
 
 document.getElementById("openServiceClientModal")
-.addEventListener("click", ()=>{
-    clientModal.classList.remove("hidden");
-    document.getElementById("clientSection").value = "service";
-    document.getElementById("clientName").value = "";
-    document.getElementById("clientPhone").value = "";
-    document.getElementById("clientEmail").value = "";
-    document.getElementById("clientVehicle").value = "";
-});
+    .addEventListener("click", ()=> openClientModalForNew("service"));
 
 document.getElementById("openExternalClientModal")
-.addEventListener("click", ()=>{
-    clientModal.classList.remove("hidden");
-    document.getElementById("clientSection").value = "external";
-    document.getElementById("clientName").value = "";
-    document.getElementById("clientPhone").value = "";
-    document.getElementById("clientEmail").value = "";
-    document.getElementById("clientVehicle").value = "";
-});
+    .addEventListener("click", ()=> openClientModalForNew("external"));
 
 closeClientModal.addEventListener("click", ()=>{
     clientModal.classList.add("hidden");
+    editingClientCard = null;
+    document.querySelector("#clientModal h2").textContent = "Nuevo cliente";
 });
-
-saveClientBtn.addEventListener("click", ()=>{
-
-    const name = document.getElementById("clientName").value;
-    const phone = document.getElementById("clientPhone").value;
-    const email = document.getElementById("clientEmail").value;
-    const vehicle = document.getElementById("clientVehicle").value;
-    const section = document.getElementById("clientSection").value;
-    const source = document.getElementById("clientSource").value;
-
-    if(!name) return;
-
-    const targets = {
-        recent: clientsList,
-        service: serviceClientsList,
-        external: externalClientsList
+function attachClientCardListeners(card) {
+    const sectionMap = {
+        clientsList:         "recent",
+        serviceClientsList:  "service",
+        externalClientsList: "external"
     };
-
-    createClientCard(name, phone, email, vehicle, source, targets[section]);
-    clientModal.classList.add("hidden");
-});
-
-function createClientCard(name, phone, email, vehicle, source, target){
-
-    const initials = name.split(" ").map(w => w[0]).join("").toUpperCase().slice(0,2);
-
     const sourceIcons = {
-        directo: "🏠",
-        whatsapp: "💬",
-        correo: "📧",
-        instagram: "📷",
-        facebook: "👤"
+        directo:"🏠", whatsapp:"💬", correo:"📧",
+        instagram:"📷", facebook:"👤"
     };
+    card.querySelector(".cp-edit-btn").addEventListener("click", ()=>{
+        editingClientCard = card;
+        document.getElementById("clientName").value    = card.dataset.name;
+        document.getElementById("clientPhone").value   = card.dataset.phone;
+        document.getElementById("clientEmail").value   = card.dataset.email;
+        document.getElementById("clientVehicle").value = card.dataset.vehicle;
+        document.getElementById("clientSource").value  = card.dataset.source;
+        const parentId = card.parentElement ? card.parentElement.id : "clientsList";
+        document.getElementById("clientSection").value = sectionMap[parentId] || "recent";
+        document.querySelector("#clientModal h2").textContent = "Editar cliente";
+        clientModal.classList.remove("hidden");
+    });
+    card.querySelector(".cp-contact-btn").addEventListener("click", ()=>{
+        if (card.dataset.phone) window.open(`tel:${card.dataset.phone}`);
+    });
+    card.querySelector(".cp-delete-btn").addEventListener("click", ()=>{
+        card.remove();
+    });
+}
 
-    const card = document.createElement("div");
-    card.className = "cp-card";
-
-    card.innerHTML = `
+function renderClientCardHTML(name, phone, email, vehicle, source) {
+    const initials = name.split(" ").map(w => w[0]).join("").toUpperCase().slice(0,2);
+    const sourceIcons = {
+        directo:"🏠", whatsapp:"💬", correo:"📧",
+        instagram:"📷", facebook:"👤"
+    };
+    return `
         <div class="cp-card-left">
             <div class="cp-avatar">${initials}</div>
             <div class="cp-info">
@@ -485,21 +525,60 @@ function createClientCard(name, phone, email, vehicle, source, target){
             </div>
         </div>
         <div class="cp-actions">
+            <button class="cp-edit-btn">✏️</button>
             <button class="cp-contact-btn" title="Contactar">📞</button>
             <button class="cp-delete-btn">✕</button>
         </div>
     `;
+}
 
-    card.querySelector(".cp-contact-btn").addEventListener("click", ()=>{
-        if(phone) window.open(`tel:${phone}`);
-    });
-
-    card.querySelector(".cp-delete-btn").addEventListener("click", ()=>{
-        card.remove();
-    });
-
+function createClientCard(name, phone, email, vehicle, source, target) {
+    const card = document.createElement("div");
+    card.className = "cp-card";
+    card.dataset.name    = name;
+    card.dataset.phone   = phone   || "";
+    card.dataset.email   = email   || "";
+    card.dataset.vehicle = vehicle || "";
+    card.dataset.source  = source  || "directo";
+    card.innerHTML = renderClientCardHTML(name, phone, email, vehicle, source);
+    attachClientCardListeners(card);
     target.appendChild(card);
 }
+
+saveClientBtn.addEventListener("click", ()=>{
+    const name    = document.getElementById("clientName").value.trim();
+    const phone   = document.getElementById("clientPhone").value.trim();
+    const email   = document.getElementById("clientEmail").value.trim();
+    const vehicle = document.getElementById("clientVehicle").value.trim();
+    const section = document.getElementById("clientSection").value;
+    const source  = document.getElementById("clientSource").value;
+
+    if (!name) return;
+
+    const targets = {
+        recent:   clientsList,
+        service:  serviceClientsList,
+        external: externalClientsList
+    };
+
+    if (editingClientCard !== null) {
+        const card = editingClientCard;
+        card.dataset.name    = name;
+        card.dataset.phone   = phone;
+        card.dataset.email   = email;
+        card.dataset.vehicle = vehicle;
+        card.dataset.source  = source;
+        card.innerHTML = renderClientCardHTML(name, phone, email, vehicle, source);
+        attachClientCardListeners(card);
+        targets[section].appendChild(card);
+        editingClientCard = null;
+        document.querySelector("#clientModal h2").textContent = "Nuevo cliente";
+    } else {
+        createClientCard(name, phone, email, vehicle, source, targets[section]);
+    }
+
+    clientModal.classList.add("hidden");
+});
 
 /* =========================
    INVENTARIO

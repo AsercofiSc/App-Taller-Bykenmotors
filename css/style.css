@@ -4343,3 +4343,33 @@ fadeGlow 2.5s ease-in-out infinite;
     transform: none !important;
     opacity: 1 !important;
 }
+/* ========================================
+   EDIT CLIENT BUTTON
+======================================== */
+
+.cp-edit-btn{
+    width: 30px !important;
+    height: 30px !important;
+    min-width: 30px !important;
+    padding: 0 !important;
+    border-radius: 8px !important;
+    background: rgba(10,132,255,.12) !important;
+    color: #0a84ff !important;
+    border: none !important;
+    font-size: .8rem !important;
+    font-weight: 400 !important;
+    cursor: pointer !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    box-shadow: none !important;
+    transform: none !important;
+    transition: .2s !important;
+    letter-spacing: 0 !important;
+}
+
+.cp-edit-btn:hover{
+    background: rgba(10,132,255,.22) !important;
+    transform: none !important;
+    opacity: 1 !important;
+}
