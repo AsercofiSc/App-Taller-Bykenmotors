@@ -2938,21 +2938,18 @@ fadeGlow 2.5s ease-in-out infinite;
 }
 
 .workshop-task strong{
-
-    font-size:.95rem;
-
-    color:#111;
-
+    font-size: .95rem;
+    font-weight: 700;
+    color: #111;
+    text-align: left;
+    display: block;
 }
 
 .workshop-task p{
-
-    font-size:.82rem;
-
-    color:#777;
-
-    margin-top:4px;
-
+    font-size: .82rem;
+    color: #777;
+    margin-top: 3px;
+    text-align: left;
 }
 
 .task-status{
@@ -4434,7 +4431,7 @@ fadeGlow 2.5s ease-in-out infinite;
 .task-actions {
     display: flex;
     align-items: center;
-    justify-content: flex-end;
+    justify-content: space-between;
     gap: 8px;
 }
 
