@@ -926,6 +926,12 @@ function createWorkshopTask(
 
             updateWorkshopStats();
 
+            if(statusSelect.value === "Completado"){
+                addNotification("task", "✅ Completado", `${task.dataset.title} — ${task.dataset.vehicle}`);
+                addActivity("task", "Trabajo completado", `${task.dataset.title} · ${task.dataset.vehicle}`);
+                showCompletedBanner(task.dataset.title, task.dataset.vehicle);
+            }
+
         }
     );
     task.querySelector(".task-edit-btn").addEventListener("click", ()=>{
@@ -1285,9 +1291,11 @@ function createInventoryCard(name, category, stock, price, alertEmail){
 
     list.appendChild(card);
 
-    if(isLow){
+   if(isLow){
         fireNotification(name, stock);
         showAlertBanner(name, stock, alertEmail);
+        addNotification("inventory", "⚠️ Stock bajo", `${name} — solo ${stock} uds`);
+        addActivity("inventory", "Alerta de stock bajo", `${name} · ${stock} unidades`);
     }
 
     updateInventoryStats();
@@ -1312,10 +1320,14 @@ function refreshCardStock(card, stock){
     if(stock === LOW_STOCK_THRESHOLD - 1){
         fireNotification(name, stock);
         showAlertBanner(name, stock, alertEmail);
+        addNotification("inventory", "⚠️ Stock bajo", `${name} — solo ${stock} uds`);
+        addActivity("inventory", "Alerta de stock bajo", `${name} · ${stock} unidades`);
     }
     if(stock === 0){
         showAlertBanner(`${name} — SIN STOCK`, 0, alertEmail);
         fireNotification(`${name} — SIN STOCK`, 0);
+        addNotification("inventory", "🚨 Sin stock", `${name} — agotado`);
+        addActivity("inventory", "Producto agotado", name);
     }
 
     updateInventoryStats();
@@ -1379,6 +1391,9 @@ function getTimeAgo(ts){
     return Math.floor(s/86400) + "d";
 }
 
+const MAX_NOTIF    = 3;
+const MAX_ACTIVITY = 4;
+
 function addNotification(iconKey, title, message){
     const container = document.querySelector(".notifications-container");
     if(!container) return;
@@ -1390,10 +1405,30 @@ function addNotification(iconKey, title, message){
         <p>${message}</p>
     `;
     container.prepend(card);
+    refreshNotifVisibility();
     if("Notification" in window && Notification.permission === "granted"){
         new Notification("🔔 " + title + " — Taller App", { body: message });
     }
 }
+
+function refreshNotifVisibility(){
+    const container = document.querySelector(".notifications-container");
+    if(!container) return;
+    const cards   = container.querySelectorAll(".notification-card");
+    const showAll = container.dataset.showAll === "true";
+    cards.forEach((c, i) => { c.style.display = (showAll || i < MAX_NOTIF) ? "" : "none"; });
+    const seeAll  = document.querySelector(".see-all");
+    if(!seeAll) return;
+    if(cards.length <= MAX_NOTIF){ seeAll.style.visibility = "hidden"; return; }
+    seeAll.style.visibility = "visible";
+    seeAll.textContent = showAll ? "Ver menos" : "Ver todas";
+}
+
+document.querySelector(".see-all")?.addEventListener("click", ()=>{
+    const container = document.querySelector(".notifications-container");
+    container.dataset.showAll = container.dataset.showAll === "true" ? "false" : "true";
+    refreshNotifVisibility();
+});
 
 function addActivity(iconKey, title, subtitle){
     const list = document.querySelector(".activity-list");
@@ -1411,6 +1446,39 @@ function addActivity(iconKey, title, subtitle){
         <span class="time grouped-time">ahora</span>
     `;
     list.prepend(item);
+    refreshActivityVisibility();
+}
+
+function refreshActivityVisibility(){
+    const list = document.querySelector(".activity-list");
+    if(!list) return;
+    const items   = list.querySelectorAll(".activity-item");
+    const showAll = list.dataset.showAll === "true";
+    items.forEach((it, i) => { it.style.display = (showAll || i < MAX_ACTIVITY) ? "" : "none"; });
+
+    let btn = document.getElementById("activityVerMas");
+    const section = document.querySelector(".activity-section");
+    if(items.length <= MAX_ACTIVITY){ if(btn) btn.style.display = "none"; return; }
+    if(!btn && section){
+        btn = document.createElement("button");
+        btn.id = "activityVerMas";
+        btn.style.cssText = `
+            display:block; width:calc(100% - 48px); margin:8px 24px 0;
+            background:rgba(255,255,255,.45); backdrop-filter:blur(10px);
+            border:1px solid rgba(255,255,255,.5); border-radius:14px;
+            color:#0a84ff; font-size:.85rem; font-weight:600; padding:12px;
+            cursor:pointer; box-shadow:none;
+        `;
+        btn.addEventListener("click", ()=>{
+            list.dataset.showAll = list.dataset.showAll === "true" ? "false" : "true";
+            refreshActivityVisibility();
+        });
+        section.appendChild(btn);
+    }
+    if(btn){
+        btn.style.display = "block";
+        btn.textContent = showAll ? "Ver menos ↑" : `Ver más (${items.length - MAX_ACTIVITY} más) ↓`;
+    }
 }
 
 setInterval(()=>{
@@ -1419,3 +1487,35 @@ setInterval(()=>{
         if(t) t.textContent = getTimeAgo(parseInt(item.dataset.time));
     });
 }, 30000);
+function showCompletedBanner(taskTitle, vehicleName){
+    const existing = document.getElementById("completedBanner");
+    if(existing) existing.remove();
+
+    let clientPhone = "";
+    document.querySelectorAll(".cp-card").forEach(card => {
+        const v = (card.dataset.vehicle || "").toLowerCase();
+        if(v.includes(vehicleName.split(" ")[0].toLowerCase())){
+            clientPhone = card.dataset.phone || "";
+        }
+    });
+
+    const banner = document.createElement("div");
+    banner.id = "completedBanner";
+    banner.className = "stock-alert-banner";
+    banner.style.cssText = "background:linear-gradient(135deg,#34c759,#30d158);box-shadow:0 6px 24px rgba(52,199,89,.35);";
+    banner.innerHTML = `
+        <span class="banner-text">✅ <strong>${taskTitle}</strong> — ${vehicleName} listo para entrega</span>
+        <div class="banner-actions">
+            ${clientPhone ? `<button class="banner-email-btn" onclick="window.open('tel:${clientPhone}')">📞 Llamar</button>` : ""}
+            <button class="banner-email-btn" onclick="notifyWhatsApp('${vehicleName}','${clientPhone}')">💬 WhatsApp</button>
+            <button class="banner-close-btn" onclick="document.getElementById('completedBanner').remove()">✕</button>
+        </div>
+    `;
+    document.body.appendChild(banner);
+    setTimeout(()=>{ const b=document.getElementById("completedBanner"); if(b)b.remove(); }, 12000);
+}
+
+function notifyWhatsApp(vehicleName, phone){
+    const msg = encodeURIComponent(`¡Hola! Su vehículo ${vehicleName} ya está listo para entrega en el taller. Puede pasar a recogerlo. 🚗✅`);
+    window.open(phone ? `https://wa.me/${phone.replace(/\D/g,'')}?text=${msg}` : `https://wa.me/?text=${msg}`);
+}
