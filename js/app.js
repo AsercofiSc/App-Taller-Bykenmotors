@@ -411,18 +411,25 @@ function createVehicleCard(name, target, year, plate, color, owner, date, status
    FUNCIÓN COMPLEMENTARIA: AUTO ADD WORKSHOP TASK
 ======================================== */
 function autoAddWorkshopTask(vehicleName) {
-    // Definimos una fecha de entrega estimada (por ejemplo, 2 días a partir de hoy)
     const entregaEstimada = new Date();
     entregaEstimada.setDate(entregaEstimada.getDate() + 2);
-    const fechaFormateada = entregaEstimada.toLocaleDateString("es-MX");
+    const isoDate = entregaEstimada.toISOString().split("T")[0];
 
-    // Creamos la tarea en el taller de manera automatizada
-    createWorkshopTask(
-        "Diagnóstico y Servicio Técnico", // Título por defecto de la tarea
-        vehicleName,                     // Nombre del vehículo que viene de la tarjeta
-        fechaFormateada,                  // Fecha tentativa
-        "En proceso"                     // Estado inicial en el taller
-    );
+    editingTaskEl = null;
+
+    document.getElementById("taskTitle").value    = "Diagnóstico y Servicio Técnico";
+    document.getElementById("taskVehicle").value  = vehicleName;
+    document.getElementById("taskDelivery").value = isoDate;
+
+    loadWorkshopVehicles();
+    document.getElementById("taskVehicleSelect").value = vehicleName;
+
+    taskStatusInput.value = "En proceso";
+    taskStatusBtn.textContent = "En proceso";
+    taskStatusBtn.classList.remove("pending-status", "completed-status");
+    taskStatusBtn.classList.add("active-status");
+
+    workshopModal.classList.remove("hidden");
 }
 
 /* =========================
@@ -451,6 +458,7 @@ const clientsList = document.getElementById("clientsList");
 const serviceClientsList = document.getElementById("serviceClientsList");
 const externalClientsList = document.getElementById("externalClientsList");
 let editingClientCard = null;
+let editingTaskEl = null;
 
 function openClientModalForNew(section = "recent") {
     editingClientCard = null;
@@ -732,6 +740,7 @@ addWorkshopTaskBtn.addEventListener("click", ()=>{
     taskStatusBtn.classList.remove("pending-status", "completed-status");
     taskStatusBtn.classList.add("active-status");
 
+    editingTaskEl = null;
 
     workshopModal.classList.remove(
         "hidden"
@@ -744,9 +753,8 @@ addWorkshopTaskBtn.addEventListener("click", ()=>{
 
 closeWorkshopModal.addEventListener("click", ()=>{
 
-    workshopModal.classList.add(
-        "hidden"
-    );
+    workshopModal.classList.add("hidden");
+    editingTaskEl = null;
 
 });
 
@@ -756,67 +764,53 @@ closeWorkshopModal.addEventListener("click", ()=>{
 
 saveWorkshopTaskBtn.addEventListener("click", ()=>{
 
-    const title =
-    document.getElementById(
-        "taskTitle"
-    ).value;
+    const title           = document.getElementById("taskTitle").value;
+    const selectedVehicle = document.getElementById("taskVehicleSelect").value;
+    const manualVehicle   = document.getElementById("taskVehicle").value;
+    const vehicle         = selectedVehicle || manualVehicle;
+    const delivery        = document.getElementById("taskDelivery").value;
+    const status          = document.getElementById("taskStatus").value;
 
-   const selectedVehicle =
-document.getElementById(
-    "taskVehicleSelect"
-).value;
-
-const manualVehicle =
-document.getElementById(
-    "taskVehicle"
-).value;
-
-const vehicle =
-selectedVehicle || manualVehicle;
-
-    const delivery =
-    document.getElementById(
-        "taskDelivery"
-    ).value;
-
-    const status =
-    document.getElementById(
-        "taskStatus"
-    ).value;
-
-    if(!title || !vehicle){
-
-        alert(
-            "Completa los datos"
-        );
-
+    if (!title || !vehicle) {
+        alert("Completa los datos");
         return;
-
     }
 
-    createWorkshopTask(
-        title,
-        vehicle,
-        delivery,
-        status
-    );
+    if (editingTaskEl !== null) {
 
-    document.getElementById(
-        "taskTitle"
-    ).value = "";
+        const task = editingTaskEl;
 
-    document.getElementById(
-        "taskVehicle"
-    ).value = "";
+        let displayDate = "Sin fecha";
+        if (delivery) {
+            const d = new Date(delivery + "T00:00:00");
+            displayDate = d.toLocaleDateString("es-MX");
+        }
 
-    document.getElementById(
-        "taskDelivery"
-    ).value = "";
+        task.dataset.title    = title;
+        task.dataset.vehicle  = vehicle;
+        task.dataset.delivery = delivery;
+        task.dataset.status   = status;
 
-    workshopModal.classList.add(
-        "hidden"
-    );
+        task.querySelector("strong").textContent      = title;
+        task.querySelectorAll("p")[0].textContent     = vehicle;
+        task.querySelectorAll("p")[1].textContent     = `📅 Entrega: ${displayDate}`;
 
+        const sel = task.querySelector(".task-select");
+        sel.value = status;
+        updateTaskStyle(sel, status);
+        updateWorkshopStats();
+
+        editingTaskEl = null;
+
+    } else {
+
+        createWorkshopTask(title, vehicle, delivery, status);
+    }
+
+    document.getElementById("taskTitle").value    = "";
+    document.getElementById("taskVehicle").value  = "";
+    document.getElementById("taskDelivery").value = "";
+    workshopModal.classList.add("hidden");
 });
 
 /* ========================================
@@ -833,7 +827,17 @@ function createWorkshopTask(
     const task =
     document.createElement("div");
 
-    task.className =
+    task.className        = "workshop-task";
+    task.dataset.title    = title;
+    task.dataset.vehicle  = vehicle;
+    task.dataset.delivery = delivery || "";
+    task.dataset.status   = status;
+
+    let displayDate = "Sin fecha";
+    if (delivery) {
+        const d = new Date(delivery + "T00:00:00");
+        displayDate = d.toLocaleDateString("es-MX");
+    }
     "workshop-task";
 
     task.innerHTML = `
@@ -849,8 +853,7 @@ function createWorkshopTask(
             </p>
 
             <p>
-                📅 Entrega:
-                ${delivery || "Sin fecha"}
+                📅 Entrega: ${displayDate}
             </p>
 
         </div>
@@ -878,6 +881,8 @@ function createWorkshopTask(
                 </option>
 
             </select>
+
+            <button class="task-edit-btn">✏️</button>
 
             <button class="delete-task">
 
@@ -910,7 +915,22 @@ function createWorkshopTask(
 
         }
     );
-
+    task.querySelector(".task-edit-btn").addEventListener("click", ()=>{
+        editingTaskEl = task;
+        document.getElementById("taskTitle").value    = task.dataset.title;
+        document.getElementById("taskVehicle").value  = task.dataset.vehicle;
+        document.getElementById("taskDelivery").value = task.dataset.delivery;
+        loadWorkshopVehicles();
+        document.getElementById("taskVehicleSelect").value = task.dataset.vehicle;
+        const s = task.dataset.status;
+        taskStatusInput.value = s;
+        taskStatusBtn.textContent = s;
+        taskStatusBtn.classList.remove("active-status","pending-status","completed-status");
+        if(s === "En proceso") taskStatusBtn.classList.add("active-status");
+        if(s === "Pendiente")  taskStatusBtn.classList.add("pending-status");
+        if(s === "Completado") taskStatusBtn.classList.add("completed-status");
+        workshopModal.classList.remove("hidden");
+    });
     task
     .querySelector(".delete-task")
     .addEventListener("click", ()=>{
