@@ -37,9 +37,7 @@ document.getElementById("workshopPage");
 ========================= */
 
 openRegister.addEventListener("click", ()=>{
-
     registerModal.style.display="flex";
-
 });
 
 registerBtn.addEventListener("click", ()=>{
@@ -54,21 +52,13 @@ registerBtn.addEventListener("click", ()=>{
     JSON.parse(localStorage.getItem("users")) || [];
 
     if(users.length >= 5){
-
         alert("Máximo 5 usuarios");
         return;
-
     }
 
-    users.push({
-        email,
-        password
-    });
+    users.push({ email, password });
 
-    localStorage.setItem(
-        "users",
-        JSON.stringify(users)
-    );
+    localStorage.setItem("users", JSON.stringify(users));
 
     alert("Usuario registrado");
 
@@ -85,38 +75,25 @@ loginForm.addEventListener("submit",(e)=>{
     e.preventDefault();
 
     const email =
-    document.querySelector(
-        '.login-form input[type="email"]'
-    ).value;
+    document.querySelector('.login-form input[type="email"]').value;
 
     const password =
-    document.querySelector(
-        '.login-form input[type="password"]'
-    ).value;
+    document.querySelector('.login-form input[type="password"]').value;
 
     let users =
     JSON.parse(localStorage.getItem("users")) || [];
 
     const validUser =
     users.find(user =>
-
         user.email === email &&
         user.password === password
-
     );
 
     if(validUser){
-
-        document.querySelector(
-            ".login-page"
-        ).style.display="none";
-
+        document.querySelector(".login-page").style.display="none";
         dashboard.classList.remove("hidden");
-
-    }else{
-
+    } else {
         alert("Datos incorrectos");
-
     }
 
 });
@@ -126,15 +103,10 @@ loginForm.addEventListener("submit",(e)=>{
 ========================= */
 
 function setActiveNav(index){
-
     navItems.forEach(item=>{
-
         item.classList.remove("active-nav");
-
     });
-
     navItems[index].classList.add("active-nav");
-
 }
 
 /* =========================
@@ -142,17 +114,11 @@ function setActiveNav(index){
 ========================= */
 
 function hideAllPages(){
-
     dashboard.classList.add("hidden");
-
     vehiclesPage.classList.add("hidden");
-
     clientsPage.classList.add("hidden");
-
     inventoryPage.classList.add("hidden");
-
     workshopPage.classList.add("hidden");
-
 }
 
 /* =========================
@@ -160,145 +126,95 @@ function hideAllPages(){
 ========================= */
 
 navItems[0].addEventListener("click", ()=>{
-
     hideAllPages();
-
     setActiveNav(0);
-
     vehiclesPage.classList.remove("hidden");
-
 });
 
 navItems[1].addEventListener("click", ()=>{
-
     hideAllPages();
-
     setActiveNav(1);
-
     clientsPage.classList.remove("hidden");
-
 });
 
 navItems[2].addEventListener("click", ()=>{
-
     hideAllPages();
-
     setActiveNav(2);
-
     inventoryPage.classList.remove("hidden");
-
 });
 
 navItems[3].addEventListener("click", ()=>{
-
     hideAllPages();
-
     setActiveNav(3);
-
     workshopPage.classList.remove("hidden");
-
 });
 
 /* =========================
    BACK BUTTONS
 ========================= */
 
-document
-.getElementById("backDashboard")
-.addEventListener("click", ()=>{
-
+document.getElementById("backDashboard").addEventListener("click", ()=>{
     hideAllPages();
-
     dashboard.classList.remove("hidden");
-
 });
 
-document
-.getElementById("backFromClients")
-.addEventListener("click", ()=>{
-
+document.getElementById("backFromClients").addEventListener("click", ()=>{
     hideAllPages();
-
     dashboard.classList.remove("hidden");
-
 });
 
-document
-.getElementById("backFromInventory")
-.addEventListener("click", ()=>{
-
+document.getElementById("backFromInventory").addEventListener("click", ()=>{
     hideAllPages();
-
     dashboard.classList.remove("hidden");
-
 });
 
-document
-.getElementById("backFromWorkshop")
-.addEventListener("click", ()=>{
-
+document.getElementById("backFromWorkshop").addEventListener("click", ()=>{
     hideAllPages();
-
     dashboard.classList.remove("hidden");
-
 });
 
 /* =========================
    VEHICLE MODAL
 ========================= */
 
-const addButtons =
-document.querySelectorAll(".add-btn");
-
-const vehicleModal =
-document.getElementById("vehicleModal");
-
-const saveVehicleBtn =
-document.getElementById("saveVehicleBtn");
-
-const closeVehicleModal =
-document.getElementById("closeVehicleModal");
+const addButtons       = document.querySelectorAll(".add-btn");
+const vehicleModal     = document.getElementById("vehicleModal");
+const saveVehicleBtn   = document.getElementById("saveVehicleBtn");
+const closeVehicleModal = document.getElementById("closeVehicleModal");
 
 let currentTarget = null;
 
 addButtons.forEach(button=>{
-
     button.addEventListener("click", ()=>{
 
-        currentTarget =
-        document.getElementById(
-            button.dataset.target
-        );
+        currentTarget = document.getElementById(button.dataset.target);
+        vehicleModal.classList.remove("hidden");
 
-      vehicleModal.classList.remove("hidden");
-document.getElementById("vehicleBrand").value = "";
-document.getElementById("vehicleModel").value = "";
-document.getElementById("vehicleYear").value = "";
-document.getElementById("vehiclePlate").value = "";
-document.getElementById("vehicleColor").value = "";
-document.getElementById("vehicleOwner").value = "";
+        document.getElementById("vehicleBrand").value = "";
+        document.getElementById("vehicleModel").value = "";
+        document.getElementById("vehicleYear").value  = "";
+        document.getElementById("vehiclePlate").value = "";
+        document.getElementById("vehicleColor").value = "";
+        document.getElementById("vehicleOwner").value = "";
 
     });
-
 });
 
 closeVehicleModal.addEventListener("click", ()=>{
-
     vehicleModal.classList.add("hidden");
-
 });
 
 /* =========================
-   SAVE VEHICLE (CON AUTO-REGISTRO DE CLIENTE)
+   SAVE VEHICLE
 ========================= */
 
 saveVehicleBtn.addEventListener("click", ()=>{
 
-    const brand = document.getElementById("vehicleBrand").value;
-    const model = document.getElementById("vehicleModel").value;
-    const year = document.getElementById("vehicleYear").value;
-    const plate = document.getElementById("vehiclePlate").value;
-    const color = document.getElementById("vehicleColor").value;
+    const brand = document.getElementById("vehicleBrand").value.trim();
+    const model = document.getElementById("vehicleModel").value.trim();
+    const year  = document.getElementById("vehicleYear").value.trim();
+    const plate = document.getElementById("vehiclePlate").value.trim();
+    const color = document.getElementById("vehicleColor").value.trim();
     const owner = document.getElementById("vehicleOwner").value.trim();
 
     if(!brand || !model) return;
@@ -306,15 +222,15 @@ saveVehicleBtn.addEventListener("click", ()=>{
     const today = new Date().toLocaleDateString("es-MX");
 
     const targets = {
-        incomingList: { label: "Ingresado", cls: "status-ingresado" },
-        serviceList:  { label: "En servicio", cls: "status-servicio" },
-        readyList:    { label: "Listo", cls: "status-listo" },
-        doneList:     { label: "Entregado", cls: "status-entregado" }
+        incomingList: { label: "Ingresado",   cls: "status-ingresado" },
+        serviceList:  { label: "En servicio", cls: "status-servicio"  },
+        readyList:    { label: "Listo",        cls: "status-listo"     },
+        doneList:     { label: "Entregado",    cls: "status-entregado" }
     };
 
     const info = targets[currentTarget.id] || { label: "Ingresado", cls: "status-ingresado" };
 
-    // 1. Crear la tarjeta del vehículo
+    // 1. Crear tarjeta del vehículo
     createVehicleCard(
         `${brand} ${model}`,
         currentTarget,
@@ -322,34 +238,30 @@ saveVehicleBtn.addEventListener("click", ()=>{
         info.label, info.cls
     );
 
-    // 2. AUTO-REGISTRO DE CLIENTE (Si es que no existe ya)
-    if (owner) {
+    // 2. Auto-registrar cliente si no existe
+    if(owner){
         const clientsList = document.getElementById("clientsList");
-        
-        // Verificar si el cliente ya existe en la lista buscando por texto
-        let clientExists = false;
-        const existingNames = clientsList.querySelectorAll(".cp-name");
-        existingNames.forEach(nameEl => {
-            if (nameEl.textContent.toLowerCase() === owner.toLowerCase()) {
+        let clientExists  = false;
+
+        clientsList.querySelectorAll(".cp-name").forEach(nameEl => {
+            if(nameEl.textContent.toLowerCase() === owner.toLowerCase()){
                 clientExists = true;
             }
         });
 
-        // Si no existe, lo agregamos automáticamente a la lista de "Recientes"
-        if (!clientExists) {
-            // Pasamos: name, phone (vacio), email (vacio), vehicle, source, target
+        if(!clientExists){
             createClientCard(
-                owner, 
-                "", 
-                "", 
-                `${brand} ${model} (${plate || "Sin placa"})`, 
-                "directo", 
+                owner,
+                "",
+                "",
+                `${brand} ${model} (${plate || "Sin placa"})`,
+                "directo",
                 clientsList
             );
         }
     }
 
-   vehicleModal.classList.add("hidden");
+    vehicleModal.classList.add("hidden");
 
     addNotification("vehicle", "Vehículo", `${brand} ${model} registrado en taller`);
     addActivity("vehicle", "Entrada de vehículo", `${brand} ${model} · ${plate || "Sin placa"}`);
@@ -363,9 +275,13 @@ saveVehicleBtn.addEventListener("click", ()=>{
 function createVehicleCard(name, target, year, plate, color, owner, date, statusLabel, statusClass){
 
     const card = document.createElement("div");
-    card.className = "vp-card";
 
-  card.innerHTML = `
+    // ── Guardamos datos clave en el dataset para sincronización ──
+    card.className           = "vp-card";
+    card.dataset.vehicleName = name;        // ej: "Nissan Tsuru"
+    card.dataset.owner       = owner || ""; // ej: "Juan Pérez"
+
+    card.innerHTML = `
         <div class="vp-card-left">
             <span class="vp-card-name">${name} &nbsp;·&nbsp; ${plate || "Sin placa"}</span>
             <span class="vp-card-plate">${owner || "Sin dueño"}</span>
@@ -382,40 +298,45 @@ function createVehicleCard(name, target, year, plate, color, owner, date, status
         </div>
     `;
 
+    // Botón eliminar
     card.querySelector(".vp-delete").addEventListener("click", ()=>{
         card.remove();
         updateCounts();
     });
 
-    // Botón "→ Servicio" solo en tarjetas de Ingresaron
+    // Botón "→ Servicio" — solo en lista "Ingresaron"
     if(target.id === "incomingList"){
         const moveBtn = document.createElement("button");
-        moveBtn.className = "vp-move-service";
+        moveBtn.className   = "vp-move-service";
         moveBtn.textContent = "→ Servicio";
+
         moveBtn.addEventListener("click", ()=>{
-            const statusEl = card.querySelector(".vp-card-status");
-            statusEl.className = "vp-card-status status-servicio";
+            const statusEl       = card.querySelector(".vp-card-status");
+            statusEl.className   = "vp-card-status status-servicio";
             statusEl.textContent = "En servicio";
+
             document.getElementById("serviceList").appendChild(card);
             moveBtn.remove();
             updateCounts();
-            
-            // Auto-crear tarea en Taller (Ahora sí funcional)
-            autoAddWorkshopTask(name);
+
+            autoAddWorkshopTask(name); // Abre modal de taller pre-llenado
             addNotification("vehicle", "En servicio", `${name} pasó a servicio`);
             addActivity("vehicle", "Vehículo a servicio", name);
         });
+
         card.querySelector(".vp-card-right").prepend(moveBtn);
     }
 
     target.appendChild(card);
     updateCounts();
-} // Aquí cierra tu función createVehicleCard original
+}
 
-/* ========================================
-   FUNCIÓN COMPLEMENTARIA: AUTO ADD WORKSHOP TASK
-======================================== */
-function autoAddWorkshopTask(vehicleName) {
+/* =========================
+   AUTO ABRIR MODAL TALLER
+========================= */
+
+function autoAddWorkshopTask(vehicleName){
+
     const entregaEstimada = new Date();
     entregaEstimada.setDate(entregaEstimada.getDate() + 2);
     const isoDate = entregaEstimada.toISOString().split("T")[0];
@@ -427,7 +348,13 @@ function autoAddWorkshopTask(vehicleName) {
     document.getElementById("taskDelivery").value = isoDate;
 
     loadWorkshopVehicles();
-    document.getElementById("taskVehicleSelect").value = vehicleName;
+
+    // ── Buscar la opción que empiece con el nombre del vehículo ──
+    const sel     = document.getElementById("taskVehicleSelect");
+    const matchOp = Array.from(sel.options).find(o =>
+        o.value.toLowerCase().startsWith(vehicleName.toLowerCase())
+    );
+    if(matchOp) sel.value = matchOp.value;
 
     taskStatusInput.value = "En proceso";
     taskStatusBtn.textContent = "En proceso";
@@ -438,7 +365,7 @@ function autoAddWorkshopTask(vehicleName) {
 }
 
 /* =========================
-   UPDATE COUNTS
+   UPDATE COUNTS (Bitácora)
 ========================= */
 
 function updateCounts(){
@@ -456,16 +383,17 @@ function updateCounts(){
    CLIENTES
 ========================= */
 
-const clientModal = document.getElementById("clientModal");
-const closeClientModal = document.getElementById("closeClientModal");
-const saveClientBtn = document.getElementById("saveClientBtn");
-const clientsList = document.getElementById("clientsList");
-const serviceClientsList = document.getElementById("serviceClientsList");
-const externalClientsList = document.getElementById("externalClientsList");
-let editingClientCard = null;
-let editingTaskEl = null;
+const clientModal          = document.getElementById("clientModal");
+const closeClientModal     = document.getElementById("closeClientModal");
+const saveClientBtn        = document.getElementById("saveClientBtn");
+const clientsList          = document.getElementById("clientsList");
+const serviceClientsList   = document.getElementById("serviceClientsList");
+const externalClientsList  = document.getElementById("externalClientsList");
 
-function openClientModalForNew(section = "recent") {
+let editingClientCard = null;
+let editingTaskEl     = null;
+
+function openClientModalForNew(section = "recent"){
     editingClientCard = null;
     document.querySelector("#clientModal h2").textContent = "Nuevo cliente";
     document.getElementById("clientName").value    = "";
@@ -490,16 +418,14 @@ closeClientModal.addEventListener("click", ()=>{
     editingClientCard = null;
     document.querySelector("#clientModal h2").textContent = "Nuevo cliente";
 });
-function attachClientCardListeners(card) {
+
+function attachClientCardListeners(card){
     const sectionMap = {
-        clientsList:         "recent",
-        serviceClientsList:  "service",
-        externalClientsList: "external"
+        clientsList:        "recent",
+        serviceClientsList: "service",
+        externalClientsList:"external"
     };
-    const sourceIcons = {
-        directo:"🏠", whatsapp:"💬", correo:"📧",
-        instagram:"📷", facebook:"👤"
-    };
+
     card.querySelector(".cp-edit-btn").addEventListener("click", ()=>{
         editingClientCard = card;
         document.getElementById("clientName").value    = card.dataset.name;
@@ -512,15 +438,17 @@ function attachClientCardListeners(card) {
         document.querySelector("#clientModal h2").textContent = "Editar cliente";
         clientModal.classList.remove("hidden");
     });
+
     card.querySelector(".cp-contact-btn").addEventListener("click", ()=>{
-        if (card.dataset.phone) window.open(`tel:${card.dataset.phone}`);
+        if(card.dataset.phone) window.open(`tel:${card.dataset.phone}`);
     });
+
     card.querySelector(".cp-delete-btn").addEventListener("click", ()=>{
         card.remove();
     });
 }
 
-function renderClientCardHTML(name, phone, email, vehicle, source) {
+function renderClientCardHTML(name, phone, email, vehicle, source){
     const initials = name.split(" ").map(w => w[0]).join("").toUpperCase().slice(0,2);
     const sourceIcons = {
         directo:"🏠", whatsapp:"💬", correo:"📧",
@@ -545,9 +473,9 @@ function renderClientCardHTML(name, phone, email, vehicle, source) {
     `;
 }
 
-function createClientCard(name, phone, email, vehicle, source, target) {
+function createClientCard(name, phone, email, vehicle, source, target){
     const card = document.createElement("div");
-    card.className = "cp-card";
+    card.className       = "cp-card";
     card.dataset.name    = name;
     card.dataset.phone   = phone   || "";
     card.dataset.email   = email   || "";
@@ -566,7 +494,7 @@ saveClientBtn.addEventListener("click", ()=>{
     const section = document.getElementById("clientSection").value;
     const source  = document.getElementById("clientSource").value;
 
-    if (!name) return;
+    if(!name) return;
 
     const targets = {
         recent:   clientsList,
@@ -574,7 +502,7 @@ saveClientBtn.addEventListener("click", ()=>{
         external: externalClientsList
     };
 
-    if (editingClientCard !== null) {
+    if(editingClientCard !== null){
         const card = editingClientCard;
         card.dataset.name    = name;
         card.dataset.phone   = phone;
@@ -591,206 +519,115 @@ saveClientBtn.addEventListener("click", ()=>{
     }
 
     clientModal.classList.add("hidden");
-
     addNotification("client", "Cliente", `${name} registrado en taller`);
     addActivity("client", "Nuevo cliente", name);
-
 });
 
 /* =========================
    INVENTARIO
 ========================= */
 
-const inventoryModal =
-document.getElementById("inventoryModal");
-
-const openInventoryModal =
-document.getElementById("openInventoryModal");
-
-const closeInventoryModal =
-document.getElementById("closeInventoryModal");
+const inventoryModal    = document.getElementById("inventoryModal");
+const openInventoryModal  = document.getElementById("openInventoryModal");
+const closeInventoryModal = document.getElementById("closeInventoryModal");
 
 openInventoryModal.addEventListener("click", ()=>{
-
     inventoryModal.classList.remove("hidden");
-
 });
 
 closeInventoryModal.addEventListener("click", ()=>{
-
     inventoryModal.classList.add("hidden");
-
 });
+
 /* ========================================
    WORKSHOP TASK SYSTEM
 ======================================== */
 
-const workshopTasks =
-document.getElementById("workshopTasks");
+const workshopTasks      = document.getElementById("workshopTasks");
+const addWorkshopTaskBtn = document.getElementById("addWorkshopTaskBtn");
+const workshopModal      = document.getElementById("workshopModal");
+const closeWorkshopModal = document.getElementById("closeWorkshopModal");
+const saveWorkshopTaskBtn = document.getElementById("saveWorkshopTaskBtn");
 
-const addWorkshopTaskBtn =
-document.getElementById("addWorkshopTaskBtn");
+/* ── Custom Status Select ── */
 
-const workshopModal =
-document.getElementById("workshopModal");
+const taskStatusBtn     = document.getElementById("taskStatusBtn");
+const taskStatusOptions = document.getElementById("taskStatusOptions");
+const taskStatusInput   = document.getElementById("taskStatus");
+const statusOptions     = document.querySelectorAll(".status-option");
 
-const closeWorkshopModal =
-document.getElementById("closeWorkshopModal");
-
-const saveWorkshopTaskBtn =
-document.getElementById("saveWorkshopTaskBtn");
-/* ========================================
-   CUSTOM STATUS SELECT
-======================================== */
-
-const taskStatusBtn =
-document.getElementById(
-    "taskStatusBtn"
-);
-
-const taskStatusOptions =
-document.getElementById(
-    "taskStatusOptions"
-);
-
-const taskStatusInput =
-document.getElementById(
-    "taskStatus"
-);
-
-const statusOptions =
-document.querySelectorAll(
-    ".status-option"
-);
-
-/* OPEN MENU */
-
-taskStatusBtn.addEventListener(
-    "click",
-    ()=>{
-
-        taskStatusOptions.classList.toggle(
-            "hidden"
-        );
-
-    }
-);
-
-/* SELECT OPTION */
+taskStatusBtn.addEventListener("click", ()=>{
+    taskStatusOptions.classList.toggle("hidden");
+});
 
 statusOptions.forEach(option=>{
-
     option.addEventListener("click", ()=>{
-
         const value = option.textContent.trim();
-
         taskStatusBtn.textContent = value;
-        taskStatusInput.value = value;
+        taskStatusInput.value     = value;
 
-        taskStatusBtn.classList.remove(
-            "active-status",
-            "pending-status",
-            "completed-status"
-        );
-
+        taskStatusBtn.classList.remove("active-status","pending-status","completed-status");
         if(value === "En proceso") taskStatusBtn.classList.add("active-status");
         if(value === "Pendiente")  taskStatusBtn.classList.add("pending-status");
         if(value === "Completado") taskStatusBtn.classList.add("completed-status");
 
         taskStatusOptions.classList.add("hidden");
-
     });
-
 });
 
-/* CLOSE OUTSIDE */
-
-document.addEventListener(
-    "click",
-    (e)=>{
-
-        if(
-            !e.target.closest(
-                ".custom-status-select"
-            )
-        ){
-
-            taskStatusOptions.classList.add(
-                "hidden"
-            );
-
-        }
-
+document.addEventListener("click", (e)=>{
+    if(!e.target.closest(".custom-status-select")){
+        taskStatusOptions.classList.add("hidden");
     }
-);
+});
 
-/* ========================================
-   OPEN MODAL
-======================================== */
+/* ── Abrir modal nueva tarea ── */
 
 addWorkshopTaskBtn.addEventListener("click", ()=>{
-
-    document.getElementById(
-        "taskTitle"
-    ).value = "";
-
-    document.getElementById(
-        "taskVehicle"
-    ).value = "";
+    document.getElementById("taskTitle").value    = "";
+    document.getElementById("taskVehicle").value  = "";
+    document.getElementById("taskDelivery").value = "";
 
     loadWorkshopVehicles();
 
-    document.getElementById(
-        "taskDelivery"
-    ).value = "";
-
     taskStatusInput.value = "En proceso";
     taskStatusBtn.textContent = "En proceso";
-    taskStatusBtn.classList.remove("pending-status", "completed-status");
+    taskStatusBtn.classList.remove("pending-status","completed-status");
     taskStatusBtn.classList.add("active-status");
 
     editingTaskEl = null;
-
-    workshopModal.classList.remove(
-        "hidden"
-    );
-
+    workshopModal.classList.remove("hidden");
 });
-/* ========================================
-   CLOSE MODAL
-======================================== */
+
+/* ── Cerrar modal ── */
 
 closeWorkshopModal.addEventListener("click", ()=>{
-
     workshopModal.classList.add("hidden");
     editingTaskEl = null;
-
 });
 
-/* ========================================
-   SAVE TASK
-======================================== */
+/* ── Guardar tarea ── */
 
 saveWorkshopTaskBtn.addEventListener("click", ()=>{
 
-    const title           = document.getElementById("taskTitle").value;
+    const title           = document.getElementById("taskTitle").value.trim();
     const selectedVehicle = document.getElementById("taskVehicleSelect").value;
-    const manualVehicle   = document.getElementById("taskVehicle").value;
+    const manualVehicle   = document.getElementById("taskVehicle").value.trim();
     const vehicle         = selectedVehicle || manualVehicle;
     const delivery        = document.getElementById("taskDelivery").value;
     const status          = document.getElementById("taskStatus").value;
 
-    if (!title || !vehicle) {
+    if(!title || !vehicle){
         alert("Completa los datos");
         return;
     }
 
-    if (editingTaskEl !== null) {
+    if(editingTaskEl !== null){
 
         const task = editingTaskEl;
 
         let displayDate = "Sin fecha";
-        if (delivery) {
+        if(delivery){
             const d = new Date(delivery + "T00:00:00");
             displayDate = d.toLocaleDateString("es-MX");
         }
@@ -800,19 +637,23 @@ saveWorkshopTaskBtn.addEventListener("click", ()=>{
         task.dataset.delivery = delivery;
         task.dataset.status   = status;
 
-        task.querySelector("strong").textContent      = title;
-        task.querySelectorAll("p")[0].textContent     = vehicle;
-        task.querySelectorAll("p")[1].textContent     = `📅 Entrega: ${displayDate}`;
+        task.querySelector("strong").textContent  = title;
+        task.querySelectorAll("p")[0].textContent = vehicle;
+        task.querySelectorAll("p")[1].textContent = `📅 Entrega: ${displayDate}`;
 
         const sel = task.querySelector(".task-select");
         sel.value = status;
         updateTaskStyle(sel, status);
         updateWorkshopStats();
 
+        // ── Si se edita y se marca Completado → sincronizar vehículo ──
+        if(status === "Completado"){
+            syncVehicleToReady(vehicle);
+        }
+
         editingTaskEl = null;
 
     } else {
-
         createWorkshopTask(title, vehicle, delivery, status);
     }
 
@@ -823,23 +664,13 @@ saveWorkshopTaskBtn.addEventListener("click", ()=>{
 
     addNotification("task", "Taller", `Tarea "${title}" guardada`);
     addActivity("task", "Nueva tarea de taller", `${title} — ${vehicle}`);
-
 });
 
-/* ========================================
-   CREATE TASK
-======================================== */
+/* ── Crear tarjeta de tarea ── */
 
-function createWorkshopTask(
-    title,
-    vehicle,
-    delivery,
-    status
-){
+function createWorkshopTask(title, vehicle, delivery, status){
 
-    const task =
-    document.createElement("div");
-
+    const task = document.createElement("div");
     task.className        = "workshop-task";
     task.dataset.title    = title;
     task.dataset.vehicle  = vehicle;
@@ -847,93 +678,44 @@ function createWorkshopTask(
     task.dataset.status   = status;
 
     let displayDate = "Sin fecha";
-    if (delivery) {
+    if(delivery){
         const d = new Date(delivery + "T00:00:00");
         displayDate = d.toLocaleDateString("es-MX");
     }
-    "workshop-task";
 
     task.innerHTML = `
-
         <div>
-
-            <strong>
-                ${title}
-            </strong>
-
-            <p>
-                ${vehicle}
-            </p>
-
-            <p>
-                📅 Entrega: ${displayDate}
-            </p>
-
+            <strong>${title}</strong>
+            <p>${vehicle}</p>
+            <p>📅 Entrega: ${displayDate}</p>
         </div>
-
         <div class="task-actions">
-
             <select class="task-select">
-
-                <option value="En proceso"
-                    ${status === "En proceso" ? "selected" : ""}
-                >
-                    En proceso
-                </option>
-
-                <option value="Pendiente"
-                    ${status === "Pendiente" ? "selected" : ""}
-                >
-                    Pendiente
-                </option>
-
-                <option value="Completado"
-                    ${status === "Completado" ? "selected" : ""}
-                >
-                    Completado
-                </option>
-
+                <option value="En proceso" ${status === "En proceso" ? "selected" : ""}>En proceso</option>
+                <option value="Pendiente"  ${status === "Pendiente"  ? "selected" : ""}>Pendiente</option>
+                <option value="Completado" ${status === "Completado" ? "selected" : ""}>Completado</option>
             </select>
-
             <button class="task-edit-btn">✏️</button>
-
-            <button class="delete-task">
-
-                ✕
-
-            </button>
-
+            <button class="delete-task">✕</button>
         </div>
-
     `;
 
-    const statusSelect =
-    task.querySelector(".task-select");
+    const statusSelect = task.querySelector(".task-select");
+    updateTaskStyle(statusSelect, status);
 
-    updateTaskStyle(
-        statusSelect,
-        status
-    );
+    statusSelect.addEventListener("change", ()=>{
+        updateTaskStyle(statusSelect, statusSelect.value);
+        updateWorkshopStats();
 
-    statusSelect.addEventListener(
-        "change",
-        ()=>{
-
-            updateTaskStyle(
-                statusSelect,
-                statusSelect.value
-            );
-
-            updateWorkshopStats();
-
-            if(statusSelect.value === "Completado"){
-                addNotification("task", "✅ Completado", `${task.dataset.title} — ${task.dataset.vehicle}`);
-                addActivity("task", "Trabajo completado", `${task.dataset.title} · ${task.dataset.vehicle}`);
-                showCompletedBanner(task.dataset.title, task.dataset.vehicle);
-            }
-
+        if(statusSelect.value === "Completado"){
+            // ── SINCRONIZACIÓN: mover vehículo a "Listos" en Bitácora ──
+            syncVehicleToReady(task.dataset.vehicle);
+            addNotification("task", "✅ Completado", `${task.dataset.title} — ${task.dataset.vehicle}`);
+            addActivity("task", "Trabajo completado", `${task.dataset.title} · ${task.dataset.vehicle}`);
+            showCompletedBanner(task.dataset.title, task.dataset.vehicle);
         }
-    );
+    });
+
     task.querySelector(".task-edit-btn").addEventListener("click", ()=>{
         editingTaskEl = task;
         document.getElementById("taskTitle").value    = task.dataset.title;
@@ -941,6 +723,7 @@ function createWorkshopTask(
         document.getElementById("taskDelivery").value = task.dataset.delivery;
         loadWorkshopVehicles();
         document.getElementById("taskVehicleSelect").value = task.dataset.vehicle;
+
         const s = task.dataset.status;
         taskStatusInput.value = s;
         taskStatusBtn.textContent = s;
@@ -948,179 +731,81 @@ function createWorkshopTask(
         if(s === "En proceso") taskStatusBtn.classList.add("active-status");
         if(s === "Pendiente")  taskStatusBtn.classList.add("pending-status");
         if(s === "Completado") taskStatusBtn.classList.add("completed-status");
+
         workshopModal.classList.remove("hidden");
     });
-    task
-    .querySelector(".delete-task")
-    .addEventListener("click", ()=>{
 
+    task.querySelector(".delete-task").addEventListener("click", ()=>{
         task.remove();
-
         updateWorkshopStats();
-
     });
 
     workshopTasks.appendChild(task);
-
     updateWorkshopStats();
-
 }
 
-/* ========================================
-   UPDATE STYLE
-======================================== */
+/* ── Cargar vehículos en el select del modal ── */
+
 function loadWorkshopVehicles(){
+    const select = document.getElementById("taskVehicleSelect");
+    select.innerHTML = `<option value="">Seleccionar vehículo</option>`;
 
-    const select =
-    document.getElementById(
-        "taskVehicleSelect"
-    );
+    document.querySelectorAll(".vp-card").forEach(card => {
+        // Usamos dataset.vehicleName guardado al crear la tarjeta
+        const name  = card.dataset.vehicleName
+            || card.querySelector(".vp-card-name").textContent.split("·")[0].trim();
+        const owner = card.dataset.owner || "";
 
-    select.innerHTML = `
-        <option value="">
-            Seleccionar vehículo
-        </option>
-    `;
-
-    const vehicleCards =
-    document.querySelectorAll(
-        ".vp-card"
-    );
-
-    vehicleCards.forEach(card=>{
-
-        const name =
-        card.querySelector(
-            ".vp-card-name"
-        ).textContent;
-
-        const option =
-        document.createElement(
-            "option"
-        );
-
-        option.value = name;
-
-        option.textContent = name;
-
-        select.appendChild(
-            option
-        );
-
+        const option = document.createElement("option");
+        option.value       = name;
+        option.textContent = owner ? `${name}  ·  ${owner}` : name;
+        select.appendChild(option);
     });
-
-}
-function updateTaskStyle(
-    element,
-    status
-){
-
-    element.classList.remove(
-        "active-status",
-        "pending-status",
-        "completed-status"
-    );
-
-    if(status === "En proceso"){
-
-        element.classList.add(
-            "active-status"
-        );
-
-    }
-
-    if(status === "Pendiente"){
-
-        element.classList.add(
-            "pending-status"
-        );
-
-    }
-
-    if(status === "Completado"){
-
-        element.classList.add(
-            "completed-status"
-        );
-
-    }
-
 }
 
-/* ========================================
-   UPDATE STATS
-======================================== */
+/* ── Aplicar estilo al select de estado ── */
+
+function updateTaskStyle(element, status){
+    element.classList.remove("active-status","pending-status","completed-status");
+    if(status === "En proceso") element.classList.add("active-status");
+    if(status === "Pendiente")  element.classList.add("pending-status");
+    if(status === "Completado") element.classList.add("completed-status");
+}
+
+/* ── Actualizar contadores del taller ── */
 
 function updateWorkshopStats(){
+    const tasks = document.querySelectorAll(".workshop-task");
 
-    const tasks =
-    document.querySelectorAll(
-        ".workshop-task"
-    );
+    const activeCars = document.getElementById("activeCars");
+    if(activeCars) activeCars.textContent = tasks.length;
 
-    // VEHICULOS ACTIVOS
-    const activeCars =
-    document.getElementById(
-        "activeCars"
-    );
-
-    if(activeCars){
-
-        activeCars.textContent =
-        tasks.length;
-
-    }
-
-    // TRABAJOS PENDIENTES
     let pending = 0;
-
     tasks.forEach(task=>{
-
-        const value =
-        task.querySelector(
-            ".task-select"
-        ).value;
-
-        if(value === "Pendiente"){
-
-            pending++;
-
-        }
-
+        if(task.querySelector(".task-select").value === "Pendiente") pending++;
     });
 
-    const pendingJobs =
-    document.getElementById(
-        "pendingJobs"
-    );
-
-    if(pendingJobs){
-
-        pendingJobs.textContent =
-        pending;
-
-    }
-
+    const pendingJobs = document.getElementById("pendingJobs");
+    if(pendingJobs) pendingJobs.textContent = pending;
 }
+
 /* ========================================
-   INVENTORY — SISTEMA COMPLETO
+   INVENTARIO — SISTEMA COMPLETO
 ======================================== */
 
 const LOW_STOCK_THRESHOLD = 5;
 
 const categoryIcons = {
-    "Filtros"     : "🔧",
-    "Aceites"     : "🛢️",
-    "Frenos"      : "⚙️",
-    "Suspensión"  : "🔩",
-    "Eléctrico"   : "⚡",
-    "Motor"       : "🔥",
-    "Transmisión" : "🔄",
-    "Carrocería"  : "🚗",
-    "Otro"        : "📦"
+    "Filtros"    : "🔧",
+    "Aceites"    : "🛢️",
+    "Frenos"     : "⚙️",
+    "Suspensión" : "🔩",
+    "Eléctrico"  : "⚡",
+    "Motor"      : "🔥",
+    "Transmisión": "🔄",
+    "Carrocería" : "🚗",
+    "Otro"       : "📦"
 };
-
-/* ── Notificación del navegador ── */
 
 function requestNotifPermission(){
     if("Notification" in window && Notification.permission === "default"){
@@ -1137,14 +822,12 @@ function fireNotification(productName, stock){
     }
 }
 
-/* ── Banner rojo en pantalla ── */
-
 function showAlertBanner(productName, stock, alertEmail){
     const existing = document.getElementById("stockAlertBanner");
     if(existing) existing.remove();
 
     const banner = document.createElement("div");
-    banner.id = "stockAlertBanner";
+    banner.id        = "stockAlertBanner";
     banner.className = "stock-alert-banner";
     banner.innerHTML = `
         <span class="banner-text">
@@ -1156,47 +839,36 @@ function showAlertBanner(productName, stock, alertEmail){
         </div>
     `;
     document.body.appendChild(banner);
-    setTimeout(()=>{ const b=document.getElementById("stockAlertBanner"); if(b)b.remove(); }, 8000);
+    setTimeout(()=>{ const b=document.getElementById("stockAlertBanner"); if(b) b.remove(); }, 8000);
 }
 
-/* ── Envío de correo vía EmailJS ──
-   REQUISITO: crea cuenta gratis en emailjs.com,
-   reemplaza los 3 valores de abajo con los tuyos ── */
-
-const EMAILJS_SERVICE_ID  = "TU_SERVICE_ID";   // ← lo obtienes en emailjs.com
-const EMAILJS_TEMPLATE_ID = "TU_TEMPLATE_ID";  // ← lo obtienes en emailjs.com
-const EMAILJS_PUBLIC_KEY  = "TU_PUBLIC_KEY";   // ← lo obtienes en emailjs.com
+const EMAILJS_SERVICE_ID  = "TU_SERVICE_ID";
+const EMAILJS_TEMPLATE_ID = "TU_TEMPLATE_ID";
+const EMAILJS_PUBLIC_KEY  = "TU_PUBLIC_KEY";
 
 function sendAlertEmail(productName, stock, toEmail){
-
     if(!toEmail){
         alert("Este producto no tiene correo de alerta configurado.");
         return;
     }
-
-    /* Si EmailJS no está cargado, usa mailto como respaldo */
     if(typeof emailjs === "undefined"){
         const subject = encodeURIComponent(`⚠️ Stock bajo: ${productName}`);
         const body    = encodeURIComponent(`El producto "${productName}" tiene solo ${stock} unidades.\n\n— Taller App`);
         window.open(`mailto:${toEmail}?subject=${subject}&body=${body}`);
         return;
     }
-
     emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
-        to_email    : toEmail,
+        to_email:     toEmail,
         product_name: productName,
-        stock_count : stock
+        stock_count:  stock
     }, EMAILJS_PUBLIC_KEY)
     .then(()=>{ alert(`✅ Alerta enviada a ${toEmail}`); })
     .catch(()=>{ alert("Error al enviar. Revisa tu configuración de EmailJS."); });
 }
 
-/* ── Guardar producto ── */
-
 const _saveInvBtn = document.getElementById("saveInventoryBtn");
 if(_saveInvBtn){
     _saveInvBtn.addEventListener("click", ()=>{
-
         const nameEl  = document.getElementById("inventoryName");
         const catEl   = document.getElementById("inventoryCategory");
         const stockEl = document.getElementById("inventoryStock");
@@ -1227,15 +899,12 @@ if(_saveInvBtn){
         priceEl.value = "";
         if(emailEl) emailEl.value = "";
 
-       inventoryModal.classList.add("hidden");
+        inventoryModal.classList.add("hidden");
 
         addNotification("inventory", "Inventario", `${name} agregado (${stock} uds)`);
         addActivity("inventory", "Producto en stock", `${name} · $${price}`);
-
     });
 }
-
-/* ── Crear tarjeta ── */
 
 function createInventoryCard(name, category, stock, price, alertEmail){
     const list  = document.getElementById("inventoryList");
@@ -1291,7 +960,7 @@ function createInventoryCard(name, category, stock, price, alertEmail){
 
     list.appendChild(card);
 
-   if(isLow){
+    if(isLow){
         fireNotification(name, stock);
         showAlertBanner(name, stock, alertEmail);
         addNotification("inventory", "⚠️ Stock bajo", `${name} — solo ${stock} uds`);
@@ -1301,8 +970,6 @@ function createInventoryCard(name, category, stock, price, alertEmail){
     updateInventoryStats();
 }
 
-/* ── Actualizar stock en tarjeta ── */
-
 function refreshCardStock(card, stock){
     const isLow      = stock < LOW_STOCK_THRESHOLD;
     const alertEmail = card.dataset.alertEmail || "";
@@ -1310,12 +977,12 @@ function refreshCardStock(card, stock){
 
     card.querySelector(".stock-display").textContent = stock;
 
-    const badge = card.querySelector(".inv-badge");
+    const badge       = card.querySelector(".inv-badge");
     badge.className   = `inv-badge ${isLow ? "low" : ""}`;
     badge.textContent = `${isLow ? "⚠️" : "✓"} ${stock} uds`;
 
-    if(isLow){ card.classList.add("low-stock-card"); }
-    else      { card.classList.remove("low-stock-card"); }
+    if(isLow) card.classList.add("low-stock-card");
+    else      card.classList.remove("low-stock-card");
 
     if(stock === LOW_STOCK_THRESHOLD - 1){
         fireNotification(name, stock);
@@ -1333,8 +1000,6 @@ function refreshCardStock(card, stock){
     updateInventoryStats();
 }
 
-/* ── Actualizar contadores ── */
-
 function updateInventoryStats(){
     const cards  = document.querySelectorAll(".inventory-card");
     let lowCount = 0;
@@ -1347,14 +1012,16 @@ function updateInventoryStats(){
     const dot    = navInv.querySelector(".nav-low-stock-dot");
     if(lowCount > 0){
         navInv.classList.add("inventory-alert");
-        if(!dot){ const d=document.createElement("span"); d.className="nav-low-stock-dot"; navInv.appendChild(d); }
+        if(!dot){
+            const d = document.createElement("span");
+            d.className = "nav-low-stock-dot";
+            navInv.appendChild(d);
+        }
     } else {
         navInv.classList.remove("inventory-alert");
         if(dot) dot.remove();
     }
 }
-
-/* ── Buscador ── */
 
 const _invSearch = document.getElementById("inventorySearch");
 if(_invSearch){
@@ -1365,8 +1032,9 @@ if(_invSearch){
         });
     });
 }
+
 /* ========================================
-   SISTEMA DE NOTIFICACIONES Y ACTIVIDAD
+   NOTIFICACIONES Y ACTIVIDAD
 ======================================== */
 
 (function initDashboard(){
@@ -1417,7 +1085,7 @@ function refreshNotifVisibility(){
     const cards   = container.querySelectorAll(".notification-card");
     const showAll = container.dataset.showAll === "true";
     cards.forEach((c, i) => { c.style.display = (showAll || i < MAX_NOTIF) ? "" : "none"; });
-    const seeAll  = document.querySelector(".see-all");
+    const seeAll = document.querySelector(".see-all");
     if(!seeAll) return;
     if(cards.length <= MAX_NOTIF){ seeAll.style.visibility = "hidden"; return; }
     seeAll.style.visibility = "visible";
@@ -1433,9 +1101,9 @@ document.querySelector(".see-all")?.addEventListener("click", ()=>{
 function addActivity(iconKey, title, subtitle){
     const list = document.querySelector(".activity-list");
     if(!list) return;
-    const ts = Date.now();
+    const ts   = Date.now();
     const item = document.createElement("div");
-    item.className = "activity-item grouped-item";
+    item.className    = "activity-item grouped-item";
     item.dataset.time = ts;
     item.innerHTML = `
         <div class="activity-icon-minimal">${APP_ICONS[iconKey]}</div>
@@ -1456,8 +1124,8 @@ function refreshActivityVisibility(){
     const showAll = list.dataset.showAll === "true";
     items.forEach((it, i) => { it.style.display = (showAll || i < MAX_ACTIVITY) ? "" : "none"; });
 
-    let btn = document.getElementById("activityVerMas");
-    const section = document.querySelector(".activity-section");
+    let btn           = document.getElementById("activityVerMas");
+    const section     = document.querySelector(".activity-section");
     if(items.length <= MAX_ACTIVITY){ if(btn) btn.style.display = "none"; return; }
     if(!btn && section){
         btn = document.createElement("button");
@@ -1477,7 +1145,9 @@ function refreshActivityVisibility(){
     }
     if(btn){
         btn.style.display = "block";
-        btn.textContent = showAll ? "Ver menos ↑" : `Ver más (${items.length - MAX_ACTIVITY} más) ↓`;
+        btn.textContent   = showAll
+            ? "Ver menos ↑"
+            : `Ver más (${items.length - MAX_ACTIVITY} más) ↓`;
     }
 }
 
@@ -1487,6 +1157,11 @@ setInterval(()=>{
         if(t) t.textContent = getTimeAgo(parseInt(item.dataset.time));
     });
 }, 30000);
+
+/* ========================================
+   BANNER: TRABAJO COMPLETADO
+======================================== */
+
 function showCompletedBanner(taskTitle, vehicleName){
     const existing = document.getElementById("completedBanner");
     if(existing) existing.remove();
@@ -1500,7 +1175,7 @@ function showCompletedBanner(taskTitle, vehicleName){
     });
 
     const banner = document.createElement("div");
-    banner.id = "completedBanner";
+    banner.id        = "completedBanner";
     banner.className = "stock-alert-banner";
     banner.style.cssText = "background:linear-gradient(135deg,#34c759,#30d158);box-shadow:0 6px 24px rgba(52,199,89,.35);";
     banner.innerHTML = `
@@ -1512,10 +1187,134 @@ function showCompletedBanner(taskTitle, vehicleName){
         </div>
     `;
     document.body.appendChild(banner);
-    setTimeout(()=>{ const b=document.getElementById("completedBanner"); if(b)b.remove(); }, 12000);
+    setTimeout(()=>{ const b=document.getElementById("completedBanner"); if(b) b.remove(); }, 12000);
 }
 
 function notifyWhatsApp(vehicleName, phone){
     const msg = encodeURIComponent(`¡Hola! Su vehículo ${vehicleName} ya está listo para entrega en el taller. Puede pasar a recogerlo. 🚗✅`);
-    window.open(phone ? `https://wa.me/${phone.replace(/\D/g,'')}?text=${msg}` : `https://wa.me/?text=${msg}`);
+    window.open(phone
+        ? `https://wa.me/${phone.replace(/\D/g,'')}?text=${msg}`
+        : `https://wa.me/?text=${msg}`
+    );
+}
+
+/* ========================================
+   SINCRONIZACIÓN ENTRE SECCIONES
+   ─────────────────────────────────────
+   Estas 3 funciones conectan Taller,
+   Bitácora y Clientes entre sí.
+======================================== */
+
+/*
+ * 1. syncVehicleToReady(vehicleName)
+ *    Se llama cuando una tarea de Taller
+ *    se marca como "Completado".
+ *    Mueve el vehículo a "Listos para entrega"
+ *    en Bitácora y añade el botón "→ Entregar".
+ */
+function syncVehicleToReady(vehicleName){
+    if(!vehicleName) return;
+
+    const searchName = vehicleName.toLowerCase().trim();
+
+    document.querySelectorAll(".vp-card").forEach(card => {
+        const cardName = (card.dataset.vehicleName || "").toLowerCase().trim();
+        if(!cardName) return;
+
+        // Coincidencia: el nombre del vehículo en la tarea está dentro del nombre de la tarjeta o viceversa
+        if(!cardName.includes(searchName) && !searchName.includes(cardName)) return;
+
+        // Actualizar badge de estado
+        const statusEl = card.querySelector(".vp-card-status");
+        if(statusEl){
+            statusEl.className   = "vp-card-status status-listo";
+            statusEl.textContent = "Listo";
+        }
+
+        // Quitar botón "→ Servicio" si aún existe
+        const oldBtn = card.querySelector(".vp-move-service:not(.vp-deliver-btn)");
+        if(oldBtn) oldBtn.remove();
+
+        // Mover a "Listos para entrega"
+        document.getElementById("readyList").appendChild(card);
+
+        // Agregar botón "→ Entregar"
+        addDeliverButton(card);
+
+        updateCounts();
+    });
+}
+
+/*
+ * 2. addDeliverButton(card)
+ *    Agrega el botón "→ Entregar" a una
+ *    tarjeta de vehículo en "Listos".
+ *    Al pulsarlo mueve el vehículo a
+ *    "Entregados" y sincroniza el cliente.
+ */
+function addDeliverButton(card){
+    // Evitar duplicados
+    if(card.querySelector(".vp-deliver-btn")) return;
+
+    const btn = document.createElement("button");
+    btn.className   = "vp-move-service vp-deliver-btn";
+    btn.textContent = "→ Entregar";
+
+    btn.addEventListener("click", ()=>{
+        // Actualizar estado en la tarjeta
+        const statusEl = card.querySelector(".vp-card-status");
+        if(statusEl){
+            statusEl.className   = "vp-card-status status-entregado";
+            statusEl.textContent = "Entregado";
+        }
+
+        btn.remove();
+        document.getElementById("doneList").appendChild(card);
+        updateCounts();
+
+        // Sincronizar cliente a "Próximos a servicio"
+        syncClientToNextService(card);
+
+        const vName = card.dataset.vehicleName || "";
+        addNotification("vehicle", "Entregado", `${vName} entregado al cliente`);
+        addActivity("vehicle", "Vehículo entregado", vName);
+    });
+
+    card.querySelector(".vp-card-right").prepend(btn);
+}
+
+/*
+ * 3. syncClientToNextService(vehicleCard)
+ *    Se llama cuando un vehículo es entregado.
+ *    Busca al dueño en la lista de clientes y
+ *    lo mueve (o crea) en "Próximos a servicio".
+ */
+function syncClientToNextService(card){
+    const ownerName   = (card.dataset.owner || "").trim();
+    const vehicleName = card.dataset.vehicleName || "";
+
+    if(!ownerName || ownerName === "Sin dueño") return;
+
+    const targetList = document.getElementById("serviceClientsList");
+
+    // Buscar si el cliente ya existe en cualquier lista
+    let existingCard = null;
+    document.querySelectorAll(".cp-card").forEach(c => {
+        if((c.dataset.name || "").toLowerCase() === ownerName.toLowerCase()){
+            existingCard = c;
+        }
+    });
+
+    if(existingCard){
+        // Solo moverlo si no está ya en "Próximos a servicio"
+        if(existingCard.parentElement?.id !== "serviceClientsList"){
+            targetList.appendChild(existingCard);
+        }
+    } else {
+        // Crear tarjeta nueva en "Próximos a servicio"
+        createClientCard(ownerName, "", "", vehicleName, "directo", targetList);
+    }
+
+    addNotification("client", "Próximo servicio", `${ownerName} — agendar revisión`);
+    addActivity("client", "Cliente → próximo servicio", `${ownerName} · ${vehicleName}`);
 }

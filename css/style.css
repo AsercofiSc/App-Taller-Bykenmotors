@@ -4445,3 +4445,43 @@ fadeGlow 2.5s ease-in-out infinite;
     background: rgba(10,132,255,.22);
     transform: scale(1.05);
 }
+/* ========================================
+   DATE INPUT — FIX MÓVIL
+======================================== */
+
+.vehicle-form input[type="date"] {
+    -webkit-appearance: none;
+    appearance: none;
+    font-family: 'Inter', sans-serif;
+    color: #111;
+    font-size: .92rem;
+    padding: 16px 18px;
+    line-height: 1.5;
+    min-height: 56px;
+}
+
+.vehicle-form input[type="date"]::-webkit-datetime-edit {
+    padding: 0;
+    color: #111;
+}
+
+.vehicle-form input[type="date"]::-webkit-datetime-edit-fields-wrapper {
+    padding: 0;
+}
+
+.vehicle-form input[type="date"]::-webkit-calendar-picker-indicator {
+    opacity: 0.45;
+    cursor: pointer;
+    width: 18px;
+    height: 18px;
+    padding: 0;
+    margin-right: 4px;
+}
+
+/* Fix específico iOS */
+@supports (-webkit-touch-callout: none) {
+    .vehicle-form input[type="date"] {
+        display: flex;
+        align-items: center;
+    }
+}
