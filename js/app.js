@@ -294,7 +294,7 @@ function createVehicleCard(name, target, year, plate, color, owner, date, status
             <span class="vp-card-status ${statusClass}">${statusLabel}</span>
         </div>
         <div class="vp-card-right">
-            <button class="vp-delete">✕</button>
+            <button class="vp-delete" title="Eliminar">✕</button>
         </div>
     `;
 
@@ -451,9 +451,17 @@ function attachClientCardListeners(card){
 function renderClientCardHTML(name, phone, email, vehicle, source){
     const initials = name.split(" ").map(w => w[0]).join("").toUpperCase().slice(0,2);
     const sourceIcons = {
-        directo:"🏠", whatsapp:"💬", correo:"📧",
-        instagram:"📷", facebook:"👤"
+        directo:   `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>`,
+        whatsapp:  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>`,
+        correo:    `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>`,
+        instagram: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor"/></svg>`,
+        facebook:  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`
     };
+    const svgCar    = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11"><rect x="1" y="3" width="15" height="13" rx="2"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>`;
+    const svgEdit   = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
+    const svgPhone  = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.39 2 2 0 0 1 3.6 1.21h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 9.91a16 16 0 0 0 6.08 6.08l1.86-1.86a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>`;
+    const svgX      = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
+    const srcIcon   = sourceIcons[source] || sourceIcons.directo;
     return `
         <div class="cp-card-left">
             <div class="cp-avatar">${initials}</div>
@@ -461,14 +469,14 @@ function renderClientCardHTML(name, phone, email, vehicle, source){
                 <span class="cp-name">${name}</span>
                 <span class="cp-detail">${phone}</span>
                 <span class="cp-detail">${email}</span>
-                ${vehicle ? `<span class="cp-vehicle">🚗 ${vehicle}</span>` : ""}
-                <span class="cp-source">${sourceIcons[source] || "🏠"} ${source}</span>
+                ${vehicle ? `<span class="cp-vehicle">${svgCar} ${vehicle}</span>` : ""}
+                <span class="cp-source">${srcIcon} ${source}</span>
             </div>
         </div>
         <div class="cp-actions">
-            <button class="cp-edit-btn">✏️</button>
-            <button class="cp-contact-btn" title="Contactar">📞</button>
-            <button class="cp-delete-btn">✕</button>
+            <button class="cp-edit-btn" title="Editar">${svgEdit}</button>
+            <button class="cp-contact-btn" title="Contactar">${svgPhone}</button>
+            <button class="cp-delete-btn" title="Eliminar">${svgX}</button>
         </div>
     `;
 }
@@ -695,8 +703,8 @@ function createWorkshopTask(title, vehicle, delivery, status){
                 <option value="Pendiente"  ${status === "Pendiente"  ? "selected" : ""}>Pendiente</option>
                 <option value="Completado" ${status === "Completado" ? "selected" : ""}>Completado</option>
             </select>
-            <button class="task-edit-btn">✏️</button>
-            <button class="delete-task">✕</button>
+            <button class="task-edit-btn" title="Editar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+            <button class="delete-task" title="Eliminar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
         </div>
     `;
 

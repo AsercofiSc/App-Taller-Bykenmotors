@@ -4485,3 +4485,28 @@ fadeGlow 2.5s ease-in-out infinite;
         align-items: center;
     }
 }
+/* ========================================
+   NAV ITEMS CON ÍCONOS SVG
+======================================== */
+
+.nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.nav-item svg {
+    stroke: currentColor;
+    transition: .25s ease;
+}
+
+.nav-item span {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .2px;
+}
+
+.active-nav svg {
+    stroke: #ff9500;
+}
