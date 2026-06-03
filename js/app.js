@@ -1036,7 +1036,14 @@ if(_invSearch){
     _invSearch.addEventListener("input", (e)=>{
         const query = e.target.value.toLowerCase().trim();
         document.querySelectorAll(".inventory-card").forEach(card =>{
-            card.style.display = card.dataset.name.includes(query) ? "flex" : "none";
+            const cardText = card.textContent.toLowerCase();
+            
+            // Usamos tu clase .hidden en lugar de modificar el style.display directamente
+            if (cardText.includes(query)) {
+                card.classList.remove("hidden");
+            } else {
+                card.classList.add("hidden");
+            }
         });
     });
 }
@@ -1326,3 +1333,18 @@ function syncClientToNextService(card){
     addNotification("client", "Próximo servicio", `${ownerName} — agendar revisión`);
     addActivity("client", "Cliente → próximo servicio", `${ownerName} · ${vehicleName}`);
 }
+/* ========================================
+   SISTEMA DE BÚSQUEDA — CLIENTES
+======================================== */
+const clientSearchInput = document.getElementById("clientSearch");
+if(clientSearchInput){
+    clientSearchInput.addEventListener("input", (e)=>{
+        const query = e.target.value.toLowerCase().trim();
+        document.querySelectorAll(".cp-card").forEach(card => {
+            // Lee todo el contenido de la tarjeta (nombre, teléfono, placa, etc.)
+            const cardText = card.textContent.toLowerCase();
+            card.style.display = cardText.includes(query) ? "flex" : "none";
+        });
+    });
+}
+
