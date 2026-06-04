@@ -293,6 +293,7 @@ addButtons.forEach(button=>{
 
 closeVehicleModal.addEventListener("click", ()=>{
     vehicleModal.classList.add("hidden");
+    if(owner) setTimeout(()=> showContactPrompt(owner), 400);
 });
 
 /* =========================
@@ -481,8 +482,121 @@ function updateCounts(){
         document.getElementById(countId).textContent = count;
         checkEmptyState(listId);
     });
+    updateDashboardStats();
+}
+/* =========================
+   CONTACT PROMPT
+========================= */
+
+function showContactPrompt(ownerName){
+    let targetCard = null;
+    document.querySelectorAll(".cp-card").forEach(card => {
+        if((card.dataset.name || "").toLowerCase() === ownerName.toLowerCase())
+            targetCard = card;
+    });
+
+    if(targetCard && targetCard.dataset.phone) return;
+
+    const existing = document.getElementById("contactPrompt");
+    if(existing) existing.remove();
+
+    const prompt = document.createElement("div");
+    prompt.id        = "contactPrompt";
+    prompt.className = "contact-prompt";
+
+    prompt.innerHTML = `
+        <p class="contact-prompt-title">Agregar contacto — ${ownerName}</p>
+        <p class="contact-prompt-sub">Con el teléfono podrás llamar y enviar WhatsApp directo desde la Bitácora</p>
+        <input type="tel"   id="promptPhone" placeholder="Teléfono">
+        <input type="email" id="promptEmail" placeholder="Correo electrónico (opcional)">
+        <div class="contact-prompt-actions">
+            <button class="contact-prompt-save" id="promptSave">Guardar contacto</button>
+            <button class="contact-prompt-skip" id="promptSkip">Ahora no</button>
+        </div>
+    `;
+
+    document.body.appendChild(prompt);
+
+    document.getElementById("promptSkip").addEventListener("click", ()=>{
+        prompt.remove();
+    });
+
+    document.getElementById("promptSave").addEventListener("click", ()=>{
+        const phone = document.getElementById("promptPhone").value.trim();
+        const email = document.getElementById("promptEmail").value.trim();
+
+        if(!phone){
+            document.getElementById("promptPhone").style.boxShadow =
+                "0 0 0 3px rgba(255,59,48,.25)";
+            return;
+        }
+
+        if(targetCard){
+            targetCard.dataset.phone = phone;
+            targetCard.dataset.email = email;
+            targetCard.innerHTML     = renderClientCardHTML(
+                targetCard.dataset.name,
+                phone,
+                email,
+                targetCard.dataset.vehicle,
+                targetCard.dataset.source
+            );
+            attachClientCardListeners(targetCard);
+        }
+
+        prompt.remove();
+        updateDashboardStats();
+    });
+
+    setTimeout(()=>{
+        const p = document.getElementById("contactPrompt");
+        if(p) p.remove();
+    }, 15000);
+}
+/* =========================
+   VEHICLE STATUS EN CLIENTE
+========================= */
+
+function getVehicleStatus(vehicleField){
+    if(!vehicleField) return null;
+    const name = vehicleField.toLowerCase().trim();
+
+    const lists = [
+        { id: "incomingList", label: "Ingresado",   cls: "status-ingresado" },
+        { id: "serviceList",  label: "En servicio", cls: "status-servicio"  },
+        { id: "readyList",    label: "Listo",        cls: "status-listo"     },
+        { id: "doneList",     label: "Entregado",    cls: "status-entregado" }
+    ];
+
+    for(const list of lists){
+        const container = document.getElementById(list.id);
+        if(!container) continue;
+        for(const card of container.querySelectorAll(".vp-card")){
+            const cardName = (card.dataset.vehicleName || "").toLowerCase().trim();
+            if(cardName && (name.includes(cardName) || cardName.includes(name.split("(")[0].trim()))){
+                return { label: list.label, cls: list.cls };
+            }
+        }
+    }
+    return null;
 }
 
+function refreshClientVehicleStatuses(){
+    document.querySelectorAll(".cp-card").forEach(card => {
+        const vehicle  = card.dataset.vehicle;
+        const statusEl = card.querySelector(".cp-vehicle-status");
+        if(!statusEl || !vehicle) return;
+
+        const status = getVehicleStatus(vehicle);
+        if(status){
+            statusEl.className   = `cp-vehicle-status vp-card-status ${status.cls}`;
+            statusEl.textContent = status.label;
+            statusEl.style.display = "";
+        } else {
+            statusEl.style.display = "none";
+        }
+    });
+}
 /* =========================
    CLIENTES
 ========================= */
@@ -575,7 +689,10 @@ function renderClientCardHTML(name, phone, email, vehicle, source){
                 <span class="cp-name">${name}</span>
                 <span class="cp-detail">${phone}</span>
                 <span class="cp-detail">${email}</span>
-                ${vehicle ? `<span class="cp-vehicle">${svgCar} ${vehicle}</span>` : ""}
+               ${vehicle ? `
+    <span class="cp-vehicle">${svgCar} ${vehicle}</span>
+    <span class="cp-vehicle-status vp-card-status" style="display:none;"></span>
+` : ""}
                 <span class="cp-source">${srcIcon} ${source}</span>
             </div>
         </div>
@@ -888,7 +1005,42 @@ function updateTaskStyle(element, status){
 }
 
 /* ── Actualizar contadores del taller ── */
+/* =========================
+   DASHBOARD STATS
+========================= */
 
+function updateDashboardStats(){
+    const serviceList = document.getElementById("serviceList");
+    const activeCars  = serviceList
+        ? Array.from(serviceList.children).filter(c => !c.classList.contains("empty-state")).length
+        : 0;
+
+    let pending = 0;
+    document.querySelectorAll(".workshop-task").forEach(task => {
+        if(task.querySelector(".task-select")?.value === "Pendiente") pending++;
+    });
+
+    const lowStock     = parseInt(document.getElementById("lowStockCount")?.textContent) || 0;
+    const totalClients = document.querySelectorAll(".cp-card").length;
+
+    const el = {
+        cars:    document.getElementById("dashActiveCars"),
+        tasks:   document.getElementById("dashPendingTasks"),
+        stock:   document.getElementById("dashLowStock"),
+        clients: document.getElementById("dashClients"),
+        card:    document.getElementById("dashLowStockCard")
+    };
+
+    if(el.cars)    el.cars.textContent    = activeCars;
+    if(el.tasks)   el.tasks.textContent   = pending;
+    if(el.stock)   el.stock.textContent   = lowStock;
+    if(el.clients) el.clients.textContent = totalClients;
+
+    if(el.card){
+        if(lowStock > 0) el.card.classList.add("dash-stat-alert");
+        else             el.card.classList.remove("dash-stat-alert");
+    }
+}
 function updateWorkshopStats(){
     const tasks       = document.querySelectorAll(".workshop-task");
     const serviceList = document.getElementById("serviceList");
@@ -908,6 +1060,8 @@ function updateWorkshopStats(){
     if(pendingJobs) pendingJobs.textContent = pending;
 
     checkEmptyState("workshopTasks");
+    updateDashboardStats();
+    refreshClientVehicleStatuses();
 }
 
 /* ========================================
@@ -1145,6 +1299,7 @@ function updateInventoryStats(){
         navInv.classList.remove("inventory-alert");
         if(dot) dot.remove();
     }
+    updateDashboardStats();
 }
 
 const _invSearch = document.getElementById("inventorySearch");
@@ -1373,6 +1528,7 @@ function syncVehicleToReady(vehicleName){
         addDeliverButton(card);
 
         updateCounts();
+        refreshClientVehicleStatuses();
     });
 }
 
@@ -1402,6 +1558,7 @@ function addDeliverButton(card){
         btn.remove();
         document.getElementById("doneList").appendChild(card);
         updateCounts();
+        refreshClientVehicleStatuses();
 
         // Sincronizar cliente a "Próximos a servicio"
         syncClientToNextService(card);
@@ -1464,3 +1621,4 @@ if(clientSearchInput){
     });
 }
 initEmptyStates();
+updateDashboardStats();
