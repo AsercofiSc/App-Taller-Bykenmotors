@@ -273,6 +273,48 @@ function showContactSheet(ownerName, anchorEl){
         });
     }, 100);
 }
+function showVehicleHistory(card){
+    const existing = document.querySelector(".history-sheet");
+    if(existing){ existing.remove(); return; }
+
+    const history = JSON.parse(card.dataset.history || "[]");
+    const name    = card.dataset.vehicleName || "Vehículo";
+
+    const sheet = document.createElement("div");
+    sheet.className = "history-sheet";
+    sheet.innerHTML = `
+        <div class="history-sheet-header">
+            <span class="history-sheet-title">Historial — ${name}</span>
+            <button class="history-sheet-close">✕</button>
+        </div>
+        <div class="history-sheet-body">
+            ${history.length === 0
+                ? `<p class="history-empty">Sin historial de servicios aún</p>`
+                : history.slice().reverse().map(h => `
+                    <div class="history-item">
+                        <div class="history-item-icon">🔧</div>
+                        <div class="history-item-info">
+                            <span class="history-item-service">${h.service}</span>
+                            <span class="history-item-date">${h.date}</span>
+                        </div>
+                    </div>
+                `).join("")
+            }
+        </div>
+    `;
+
+    document.body.appendChild(sheet);
+    sheet.querySelector(".history-sheet-close").addEventListener("click", () => sheet.remove());
+
+    setTimeout(()=>{
+        document.addEventListener("click", function close(e){
+            if(!e.target.closest(".history-sheet") && !e.target.closest(".vp-history-btn")){
+                sheet.remove();
+                document.removeEventListener("click", close);
+            }
+        });
+    }, 100);
+}
 
 /* =========================
    NAVIGATION
@@ -449,6 +491,7 @@ function createVehicleCard(name, target, year, plate, color, owner, date, status
     card.dataset.color       = color  || "";
     card.dataset.notes       = notes  || "";
     card.dataset.date        = date   || "";
+    card.dataset.history = "[]";
 
     card.innerHTML = `
         <div class="vp-card-left">
@@ -464,9 +507,10 @@ function createVehicleCard(name, target, year, plate, color, owner, date, status
             <span class="vp-card-status ${statusClass}">${statusLabel}</span>
         </div>
         <div class="vp-card-right">
-            ${owner ? `<button class="vp-contact-btn" title="Contactar a ${owner}">📞</button>` : ""}
-            <button class="vp-delete" title="Eliminar">✕</button>
-        </div>
+    <button class="vp-history-btn" title="Historial">🕐</button>
+    ${owner ? `<button class="vp-contact-btn" title="Contactar a ${owner}">📞</button>` : ""}
+    <button class="vp-delete" title="Eliminar">✕</button>
+</div>
     `;
 
     const contactBtn = card.querySelector(".vp-contact-btn");
@@ -476,6 +520,10 @@ function createVehicleCard(name, target, year, plate, color, owner, date, status
             showContactSheet(owner, contactBtn);
         });
     }
+    card.querySelector(".vp-history-btn").addEventListener("click", (e) => {
+    e.stopPropagation();
+    showVehicleHistory(card);
+});
 
     card.querySelector(".vp-delete").addEventListener("click", ()=>{
         if(!confirm(`¿Eliminar ${name}?`)) return;
@@ -1691,6 +1739,12 @@ function syncVehicleToReady(vehicleName, taskTitle){
         // Guardar último servicio
         card.dataset.lastService     = taskTitle || "Servicio realizado";
         card.dataset.lastServiceDate = new Date().toLocaleDateString("es-MX");
+        const hist = JSON.parse(card.dataset.history || "[]");
+        hist.push({
+            service: taskTitle || "Servicio realizado",
+            date:    new Date().toLocaleDateString("es-MX")
+        });
+        card.dataset.history = JSON.stringify(hist);
 
         // Quitar botón "→ Servicio" si aún existe
         const oldBtn = card.querySelector(".vp-move-service:not(.vp-deliver-btn)");
@@ -1853,6 +1907,7 @@ function saveVehicles(){
                 date:            card.dataset.date        || "",
                 lastService:     card.dataset.lastService     || "",
                 lastServiceDate: card.dataset.lastServiceDate || "",
+                history: card.dataset.history || "[]",
                 statusLabel: statusEl ? statusEl.textContent.trim() : "Ingresado",
                 statusClass: statusEl
                     ? (Array.from(statusEl.classList).find(c => c.startsWith("status-")) || "status-ingresado")
@@ -1932,6 +1987,7 @@ function loadVehicles(){
         if(card){
             card.dataset.lastService     = v.lastService     || "";
             card.dataset.lastServiceDate = v.lastServiceDate || "";
+            card.dataset.history = v.history || "[]";
             if(v.listId === "readyList") addDeliverButton(card);
         }
     });
