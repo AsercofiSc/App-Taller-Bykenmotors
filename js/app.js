@@ -293,7 +293,6 @@ addButtons.forEach(button=>{
 
 closeVehicleModal.addEventListener("click", ()=>{
     vehicleModal.classList.add("hidden");
-    if(owner) setTimeout(()=> showContactPrompt(owner), 400);
 });
 
 /* =========================
@@ -661,10 +660,12 @@ function attachClientCardListeners(card){
         if(card.dataset.phone) window.open(`tel:${card.dataset.phone}`);
     });
 
-    card.querySelector(".cp-delete-btn").addEventListener("click", ()=>{
+   card.querySelector(".cp-delete-btn").addEventListener("click", ()=>{
     if(!confirm(`¿Eliminar a ${card.dataset.name}?`)) return;
+    const parentId = card.parentElement?.id || "clientsList";
     card.remove();
-    checkEmptyState(card.parentElement?.id || "clientsList");
+    checkEmptyState(parentId);
+    updateDashboardStats();
 });
 }
 
@@ -1117,28 +1118,61 @@ function showAlertBanner(productName, stock, alertEmail){
     setTimeout(()=>{ const b=document.getElementById("stockAlertBanner"); if(b) b.remove(); }, 8000);
 }
 
-const EMAILJS_SERVICE_ID  = "TU_SERVICE_ID";
-const EMAILJS_TEMPLATE_ID = "TU_TEMPLATE_ID";
-const EMAILJS_PUBLIC_KEY  = "TU_PUBLIC_KEY";
+/* =========================
+   EMAILJS — CONFIGURACIÓN
+========================= */
 
-function sendAlertEmail(productName, stock, toEmail){
-    if(!toEmail){
-        alert("Este producto no tiene correo de alerta configurado.");
-        return;
+const EMAILJS_SERVICE_ID  = "service_pq9ccih";
+const EMAILJS_TEMPLATE_ID = "template_b4js047";
+const EMAILJS_PUBLIC_KEY  = "AUzjdb6klscSyYLht";
+const TALLER_EMAIL        = "vectralumina@outlook.com";
+
+(function initEmailJS(){
+    if(typeof emailjs !== "undefined"){
+        emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY });
     }
+})();
+
+function enviarEmail(toEmail, subject, message){
+    if(!toEmail) return;
     if(typeof emailjs === "undefined"){
-        const subject = encodeURIComponent(`⚠️ Stock bajo: ${productName}`);
-        const body    = encodeURIComponent(`El producto "${productName}" tiene solo ${stock} unidades.\n\n— Taller App`);
-        window.open(`mailto:${toEmail}?subject=${subject}&body=${body}`);
+        const s = encodeURIComponent(subject);
+        const b = encodeURIComponent(message + "\n\n— Taller App");
+        window.open(`mailto:${toEmail}?subject=${s}&body=${b}`);
         return;
     }
     emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
-        to_email:     toEmail,
-        product_name: productName,
-        stock_count:  stock
-    }, EMAILJS_PUBLIC_KEY)
-    .then(()=>{ alert(`✅ Alerta enviada a ${toEmail}`); })
-    .catch(()=>{ alert("Error al enviar. Revisa tu configuración de EmailJS."); });
+        to_email : toEmail,
+        subject  : subject,
+        message  : message
+    })
+    .then(()=> console.log(`✅ Email enviado a ${toEmail}`))
+    .catch(e => console.error("EmailJS error:", e));
+}
+
+function sendAlertEmail(productName, stock, alertEmail){
+    const subject = `⚠️ Stock bajo: ${productName}`;
+    const message = `El producto "${productName}" tiene solo ${stock} unidades en stock.\n\nRevisa tu inventario lo antes posible.`;
+    enviarEmail(TALLER_EMAIL, subject, message);
+    if(alertEmail && alertEmail !== TALLER_EMAIL){
+        enviarEmail(alertEmail, subject, message);
+    }
+}
+
+function sendVehicleReadyEmail(clientEmail, clientName, vehicleName){
+    if(!clientEmail) return;
+    const subject = `🚗 Tu vehículo está listo — ${vehicleName}`;
+    const message = `Hola ${clientName},\n\nTu vehículo ${vehicleName} ya está listo para entrega en el taller.\n\nPuedes pasar a recogerlo en horario de atención.`;
+    enviarEmail(clientEmail, subject, message);
+    enviarEmail(TALLER_EMAIL, `✅ Listo para entrega: ${vehicleName}`, `${vehicleName} (${clientName}) marcado como listo.`);
+}
+
+function sendDeliveryEmail(clientEmail, clientName, vehicleName){
+    if(!clientEmail) return;
+    const subject = `✅ Vehículo entregado — ${vehicleName}`;
+    const message = `Hola ${clientName},\n\nConfirmamos la entrega de tu vehículo ${vehicleName}.\n\n¡Gracias por tu preferencia!`;
+    enviarEmail(clientEmail, subject, message);
+    enviarEmail(TALLER_EMAIL, `🏁 Entregado: ${vehicleName}`, `${vehicleName} entregado a ${clientName}.`);
 }
 
 const _saveInvBtn = document.getElementById("saveInventoryBtn");
@@ -1525,7 +1559,14 @@ function syncVehicleToReady(vehicleName){
         document.getElementById("readyList").appendChild(card);
 
         // Agregar botón "→ Entregar"
-        addDeliverButton(card);
+      addDeliverButton(card);
+
+        // Email al cliente: vehículo listo
+        const ownerCard = [...document.querySelectorAll(".cp-card")]
+            .find(c => (c.dataset.name||"").toLowerCase() === (card.dataset.owner||"").toLowerCase());
+        if(ownerCard?.dataset.email){
+            sendVehicleReadyEmail(ownerCard.dataset.email, card.dataset.owner, card.dataset.vehicleName||"");
+        }
 
         updateCounts();
         refreshClientVehicleStatuses();
@@ -1559,6 +1600,13 @@ function addDeliverButton(card){
         document.getElementById("doneList").appendChild(card);
         updateCounts();
         refreshClientVehicleStatuses();
+
+        // Email al cliente: vehículo entregado
+        const oCard = [...document.querySelectorAll(".cp-card")]
+            .find(c => (c.dataset.name||"").toLowerCase() === (card.dataset.owner||"").toLowerCase());
+        if(oCard?.dataset.email){
+            sendDeliveryEmail(oCard.dataset.email, card.dataset.owner, card.dataset.vehicleName||"");
+        }
 
         // Sincronizar cliente a "Próximos a servicio"
         syncClientToNextService(card);
@@ -1620,5 +1668,16 @@ if(clientSearchInput){
         });
     });
 }
+/* =========================
+   LOGOUT
+========================= */
+document.getElementById("logoutBtn")?.addEventListener("click", ()=>{
+    if(!confirm("¿Cerrar sesión?")) return;
+    hideAllPages();
+    dashboard.classList.add("hidden");
+    document.querySelector(".login-page").style.display = "flex";
+    document.querySelector('.login-form input[type="email"]').value    = "";
+    document.querySelector('.login-form input[type="password"]').value = "";
+});
 initEmptyStates();
 updateDashboardStats();
