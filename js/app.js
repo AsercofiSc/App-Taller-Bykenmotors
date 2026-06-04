@@ -1,4 +1,23 @@
 /* ========================================
+   CAPA DE DATOS
+   — swap DB.save/load por fetch() cuando
+     conectes tu backend
+======================================== */
+let _isLoading = false;
+
+const DB = {
+    save(key, value){
+        try{ localStorage.setItem("tallerApp_" + key, JSON.stringify(value)); }
+        catch(e){ console.warn("DB.save:", e); }
+    },
+    load(key, fallback = null){
+        try{
+            const raw = localStorage.getItem("tallerApp_" + key);
+            return raw !== null ? JSON.parse(raw) : fallback;
+        } catch(e){ return fallback; }
+    }
+};
+/* ========================================
    SISTEMA DE CARGA ASÍNCRONA (LOADER)
 ======================================== */
 (function() {
@@ -263,24 +282,30 @@ navItems[0].addEventListener("click", ()=>{
     hideAllPages();
     setActiveNav(0);
     vehiclesPage.classList.remove("hidden");
+    updateCounts();
 });
 
 navItems[1].addEventListener("click", ()=>{
     hideAllPages();
     setActiveNav(1);
     clientsPage.classList.remove("hidden");
+    refreshClientVehicleStatuses();
+    ["clientsList","serviceClientsList","externalClientsList"].forEach(id => checkEmptyState(id));
 });
 
 navItems[2].addEventListener("click", ()=>{
     hideAllPages();
     setActiveNav(2);
     inventoryPage.classList.remove("hidden");
+    updateInventoryStats();
 });
 
 navItems[3].addEventListener("click", ()=>{
     hideAllPages();
     setActiveNav(3);
     workshopPage.classList.remove("hidden");
+    updateWorkshopStats();
+    saveWorkshopTasks(); // ← AÑADIR al final
 });
 
 /* =========================
@@ -399,10 +424,13 @@ saveVehicleBtn.addEventListener("click", ()=>{
         }
     }
 
-    vehicleModal.classList.add("hidden");
+   vehicleModal.classList.add("hidden");
 
     addNotification("vehicle", "Vehículo", `${brand} ${model} registrado en taller`);
     addActivity("vehicle", "Entrada de vehículo", `${brand} ${model} · ${plate || "Sin placa"}`);
+
+    // Invitar a completar teléfono si no tiene
+    if(owner) setTimeout(() => showContactPrompt(owner), 400);
 
 });
 
@@ -415,9 +443,13 @@ function createVehicleCard(name, target, year, plate, color, owner, date, status
     const card = document.createElement("div");
     card.className           = "vp-card";
     card.dataset.vehicleName = name;
-    card.dataset.owner       = owner || "";
+    card.dataset.owner       = owner  || "";
+    card.dataset.year        = year   || "";
+    card.dataset.plate       = plate  || "";
+    card.dataset.color       = color  || "";
+    card.dataset.notes       = notes  || "";
+    card.dataset.date        = date   || "";
 
-    // 2. Modifica el innerHTML agregando la validación condicional de las notas:
     card.innerHTML = `
         <div class="vp-card-left">
             <span class="vp-card-name">${name} &nbsp;·&nbsp; ${plate || "Sin placa"}</span>
@@ -437,7 +469,6 @@ function createVehicleCard(name, target, year, plate, color, owner, date, status
         </div>
     `;
 
-    // Botón contactar
     const contactBtn = card.querySelector(".vp-contact-btn");
     if(contactBtn){
         contactBtn.addEventListener("click", (e)=>{
@@ -446,7 +477,6 @@ function createVehicleCard(name, target, year, plate, color, owner, date, status
         });
     }
 
-    // Botón eliminar con confirmación
     card.querySelector(".vp-delete").addEventListener("click", ()=>{
         if(!confirm(`¿Eliminar ${name}?`)) return;
         card.remove();
@@ -454,7 +484,6 @@ function createVehicleCard(name, target, year, plate, color, owner, date, status
         updateWorkshopStats();
     });
 
-    // Botón "→ Servicio" solo en Ingresaron
     if(target.id === "incomingList"){
         const moveBtn = document.createElement("button");
         moveBtn.className   = "vp-move-service";
@@ -477,6 +506,8 @@ function createVehicleCard(name, target, year, plate, color, owner, date, status
     target.appendChild(card);
     updateCounts();
     updateWorkshopStats();
+
+    return card; // ← necesario para la persistencia
 }
 /* =========================
    AUTO ABRIR MODAL TALLER
@@ -530,6 +561,7 @@ function updateCounts(){
         checkEmptyState(listId);
     });
     updateDashboardStats();
+    saveVehicles(); // ← AÑADIR
 }
 /* =========================
    CONTACT PROMPT
@@ -564,7 +596,18 @@ function showContactPrompt(ownerName){
 
     document.body.appendChild(prompt);
 
+    // ── Auto-dismiss si el usuario lo ignora ──
+    let autoClose = setTimeout(()=>{
+        const p = document.getElementById("contactPrompt");
+        if(p) p.remove();
+    }, 15000);
+
+    // ── Cancelar auto-dismiss en cuanto el usuario interactúa ──
+    prompt.addEventListener("click",   () => clearTimeout(autoClose));
+    prompt.addEventListener("focusin", () => clearTimeout(autoClose));
+
     document.getElementById("promptSkip").addEventListener("click", ()=>{
+        clearTimeout(autoClose);
         prompt.remove();
     });
 
@@ -591,14 +634,11 @@ function showContactPrompt(ownerName){
             attachClientCardListeners(targetCard);
         }
 
+        clearTimeout(autoClose);
         prompt.remove();
         updateDashboardStats();
+        saveClients();
     });
-
-    setTimeout(()=>{
-        const p = document.getElementById("contactPrompt");
-        if(p) p.remove();
-    }, 15000);
 }
 /* =========================
    VEHICLE STATUS EN CLIENTE
@@ -1354,6 +1394,8 @@ function createInventoryCard(name, category, stock, price, alertEmail){
     card.remove();
     updateInventoryStats();
     checkEmptyState("inventoryList");
+    // ...todo lo existente...
+    saveInventory(); // ← AÑADIR al final
 });
 card.querySelector(".inv-edit").addEventListener("click", ()=>{
         editingInventoryCard = card;
@@ -1791,5 +1833,144 @@ document.getElementById("logoutBtn")?.addEventListener("click", ()=>{
     document.querySelector('.login-form input[type="email"]').value    = "";
     document.querySelector('.login-form input[type="password"]').value = "";
 });
+/* ========================================
+   GUARDAR ESTADO
+======================================== */
+
+function saveVehicles(){
+    if(_isLoading) return;
+    const data = [];
+    ["incomingList","serviceList","readyList","doneList"].forEach(listId => {
+        document.querySelectorAll(`#${listId} .vp-card`).forEach(card => {
+            const statusEl = card.querySelector(".vp-card-status");
+            data.push({
+                name:            card.dataset.vehicleName || "",
+                owner:           card.dataset.owner       || "",
+                year:            card.dataset.year        || "",
+                plate:           card.dataset.plate       || "",
+                color:           card.dataset.color       || "",
+                notes:           card.dataset.notes       || "",
+                date:            card.dataset.date        || "",
+                lastService:     card.dataset.lastService     || "",
+                lastServiceDate: card.dataset.lastServiceDate || "",
+                statusLabel: statusEl ? statusEl.textContent.trim() : "Ingresado",
+                statusClass: statusEl
+                    ? (Array.from(statusEl.classList).find(c => c.startsWith("status-")) || "status-ingresado")
+                    : "status-ingresado",
+                listId
+            });
+        });
+    });
+    DB.save("vehicles", data);
+}
+
+function saveClients(){
+    if(_isLoading) return;
+    const data = [];
+    ["clientsList","serviceClientsList","externalClientsList"].forEach(listId => {
+        document.querySelectorAll(`#${listId} .cp-card`).forEach(card => {
+            data.push({
+                name:            card.dataset.name            || "",
+                phone:           card.dataset.phone           || "",
+                email:           card.dataset.email           || "",
+                vehicle:         card.dataset.vehicle         || "",
+                source:          card.dataset.source          || "directo",
+                lastService:     card.dataset.lastService     || "",
+                lastServiceDate: card.dataset.lastServiceDate || "",
+                listId
+            });
+        });
+    });
+    DB.save("clients", data);
+}
+
+function saveInventory(){
+    if(_isLoading) return;
+    const data = [];
+    document.querySelectorAll(".inventory-card").forEach(card => {
+        data.push({
+            name:       card.dataset.fullName   || "",
+            category:   card.dataset.category   || "",
+            stock:      parseInt(card.dataset.stock) || 0,
+            price:      parseFloat(card.dataset.price) || 0,
+            alertEmail: card.dataset.alertEmail || ""
+        });
+    });
+    DB.save("inventory", data);
+}
+
+function saveWorkshopTasks(){
+    if(_isLoading) return;
+    const data = [];
+    document.querySelectorAll(".workshop-task").forEach(task => {
+        data.push({
+            title:    task.dataset.title    || "",
+            vehicle:  task.dataset.vehicle  || "",
+            delivery: task.dataset.delivery || "",
+            status:   task.querySelector(".task-select")?.value || task.dataset.status || "En proceso"
+        });
+    });
+    DB.save("workshopTasks", data);
+}
+
+/* ========================================
+   CARGAR ESTADO
+======================================== */
+
+function loadVehicles(){
+    const data = DB.load("vehicles", []);
+    data.forEach(v => {
+        const target = document.getElementById(v.listId);
+        if(!target) return;
+        const card = createVehicleCard(
+            v.name, target,
+            v.year, v.plate, v.color, v.owner, v.date,
+            v.statusLabel || "Ingresado",
+            v.statusClass  || "status-ingresado",
+            v.notes
+        );
+        if(card){
+            card.dataset.lastService     = v.lastService     || "";
+            card.dataset.lastServiceDate = v.lastServiceDate || "";
+            if(v.listId === "readyList") addDeliverButton(card);
+        }
+    });
+}
+
+function loadClients(){
+    const data = DB.load("clients", []);
+    data.forEach(c => {
+        const target = document.getElementById(c.listId);
+        if(!target) return;
+        createClientCard(
+            c.name, c.phone, c.email, c.vehicle,
+            c.source, target,
+            c.lastService, c.lastServiceDate
+        );
+    });
+}
+
+function loadInventory(){
+    const data = DB.load("inventory", []);
+    data.forEach(item => {
+        createInventoryCard(item.name, item.category, item.stock, item.price, item.alertEmail);
+    });
+}
+
+function loadWorkshopTasks(){
+    const data = DB.load("workshopTasks", []);
+    data.forEach(t => createWorkshopTask(t.title, t.vehicle, t.delivery, t.status));
+}
+
+/* ========================================
+   ARRANQUE — carga persistencia
+======================================== */
+
+_isLoading = true;
+loadVehicles();
+loadClients();
+loadInventory();
+loadWorkshopTasks();
+_isLoading = false;
 initEmptyStates();
 updateDashboardStats();
