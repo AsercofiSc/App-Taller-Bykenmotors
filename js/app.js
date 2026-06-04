@@ -120,6 +120,97 @@ function hideAllPages(){
     inventoryPage.classList.add("hidden");
     workshopPage.classList.add("hidden");
 }
+/* =========================
+   EMPTY STATES
+========================= */
+
+const EMPTY_MSGS = {
+    incomingList:        "Sin vehículos ingresados",
+    serviceList:         "Sin vehículos en servicio",
+    readyList:           "Sin vehículos listos",
+    doneList:            "Sin vehículos entregados",
+    clientsList:         "Sin clientes recientes",
+    serviceClientsList:  "Sin próximos a servicio",
+    externalClientsList: "Sin contactos externos",
+    inventoryList:       "Sin productos en inventario",
+    workshopTasks:       "Sin tareas del día"
+};
+
+function checkEmptyState(containerId){
+    const container = document.getElementById(containerId);
+    if(!container) return;
+    const old = container.querySelector(".empty-state");
+    if(old) old.remove();
+    const real = Array.from(container.children).filter(c => !c.classList.contains("empty-state"));
+    if(real.length === 0){
+        const el = document.createElement("div");
+        el.className = "empty-state";
+        el.innerHTML = `<p>${EMPTY_MSGS[containerId] || "Sin registros"}</p>`;
+        container.appendChild(el);
+    }
+}
+
+function initEmptyStates(){
+    Object.keys(EMPTY_MSGS).forEach(id => checkEmptyState(id));
+}
+
+/* =========================
+   CONTACT SHEET — BITÁCORA
+========================= */
+
+function getClientPhone(ownerName){
+    if(!ownerName) return "";
+    let phone = "";
+    document.querySelectorAll(".cp-card").forEach(card => {
+        if((card.dataset.name || "").toLowerCase() === ownerName.toLowerCase())
+            phone = card.dataset.phone || "";
+    });
+    return phone;
+}
+
+function showContactSheet(ownerName, anchorEl){
+    const existing = document.querySelector(".contact-sheet");
+    if(existing){ existing.remove(); return; }
+
+    const phone = getClientPhone(ownerName);
+    const sheet = document.createElement("div");
+    sheet.className = "contact-sheet";
+
+    const rect = anchorEl.getBoundingClientRect();
+    sheet.style.top   = (rect.bottom + 8) + "px";
+    sheet.style.right = (window.innerWidth - rect.right) + "px";
+
+    sheet.innerHTML = `
+        <span class="contact-sheet-name">${ownerName}</span>
+        ${phone
+            ? `<button class="contact-sheet-btn" id="csCall">📞 Llamar</button>
+               <button class="contact-sheet-btn" id="csWA">💬 WhatsApp</button>`
+            : `<div style="padding:8px 14px;font-size:.78rem;color:#aaa;">Sin teléfono registrado</div>`
+        }
+    `;
+
+    if(phone){
+        sheet.querySelector("#csCall").addEventListener("click", ()=>{
+            window.open(`tel:${phone}`);
+            sheet.remove();
+        });
+        sheet.querySelector("#csWA").addEventListener("click", ()=>{
+            const msg = encodeURIComponent(`Hola ${ownerName}, le contactamos del taller con información sobre su vehículo.`);
+            window.open(`https://wa.me/${phone.replace(/\D/g,'')}?text=${msg}`);
+            sheet.remove();
+        });
+    }
+
+    document.body.appendChild(sheet);
+    setTimeout(()=>{
+        document.addEventListener("click", function close(e){
+            if(!e.target.closest(".contact-sheet") && !e.target.closest(".vp-contact-btn")){
+                sheet.remove();
+                document.removeEventListener("click", close);
+            }
+        });
+    }, 100);
+}
 
 /* =========================
    NAVIGATION
@@ -275,11 +366,9 @@ saveVehicleBtn.addEventListener("click", ()=>{
 function createVehicleCard(name, target, year, plate, color, owner, date, statusLabel, statusClass){
 
     const card = document.createElement("div");
-
-    // ── Guardamos datos clave en el dataset para sincronización ──
     card.className           = "vp-card";
-    card.dataset.vehicleName = name;        // ej: "Nissan Tsuru"
-    card.dataset.owner       = owner || ""; // ej: "Juan Pérez"
+    card.dataset.vehicleName = name;
+    card.dataset.owner       = owner || "";
 
     card.innerHTML = `
         <div class="vp-card-left">
@@ -294,41 +383,51 @@ function createVehicleCard(name, target, year, plate, color, owner, date, status
             <span class="vp-card-status ${statusClass}">${statusLabel}</span>
         </div>
         <div class="vp-card-right">
+            ${owner ? `<button class="vp-contact-btn" title="Contactar a ${owner}">📞</button>` : ""}
             <button class="vp-delete" title="Eliminar">✕</button>
         </div>
     `;
 
-    // Botón eliminar
+    // Botón contactar
+    const contactBtn = card.querySelector(".vp-contact-btn");
+    if(contactBtn){
+        contactBtn.addEventListener("click", (e)=>{
+            e.stopPropagation();
+            showContactSheet(owner, contactBtn);
+        });
+    }
+
+    // Botón eliminar con confirmación
     card.querySelector(".vp-delete").addEventListener("click", ()=>{
+        if(!confirm(`¿Eliminar ${name}?`)) return;
         card.remove();
         updateCounts();
+        updateWorkshopStats();
     });
 
-    // Botón "→ Servicio" — solo en lista "Ingresaron"
+    // Botón "→ Servicio" solo en Ingresaron
     if(target.id === "incomingList"){
         const moveBtn = document.createElement("button");
         moveBtn.className   = "vp-move-service";
         moveBtn.textContent = "→ Servicio";
-
         moveBtn.addEventListener("click", ()=>{
             const statusEl       = card.querySelector(".vp-card-status");
             statusEl.className   = "vp-card-status status-servicio";
             statusEl.textContent = "En servicio";
-
             document.getElementById("serviceList").appendChild(card);
             moveBtn.remove();
             updateCounts();
-
-            autoAddWorkshopTask(name); // Abre modal de taller pre-llenado
+            updateWorkshopStats();
+            autoAddWorkshopTask(name);
             addNotification("vehicle", "En servicio", `${name} pasó a servicio`);
             addActivity("vehicle", "Vehículo a servicio", name);
         });
-
         card.querySelector(".vp-card-right").prepend(moveBtn);
     }
 
     target.appendChild(card);
     updateCounts();
+    updateWorkshopStats();
 }
 
 /* =========================
@@ -369,14 +468,19 @@ function autoAddWorkshopTask(vehicleName){
 ========================= */
 
 function updateCounts(){
-    document.getElementById("incomingCount").textContent =
-        document.getElementById("incomingList").children.length;
-    document.getElementById("serviceCount").textContent =
-        document.getElementById("serviceList").children.length;
-    document.getElementById("readyCount").textContent =
-        document.getElementById("readyList").children.length;
-    document.getElementById("doneCount").textContent =
-        document.getElementById("doneList").children.length;
+    const map = {
+        incomingList: "incomingCount",
+        serviceList:  "serviceCount",
+        readyList:    "readyCount",
+        doneList:     "doneCount"
+    };
+    Object.entries(map).forEach(([listId, countId]) => {
+        const list  = document.getElementById(listId);
+        const count = Array.from(list.children)
+            .filter(c => !c.classList.contains("empty-state")).length;
+        document.getElementById(countId).textContent = count;
+        checkEmptyState(listId);
+    });
 }
 
 /* =========================
@@ -444,8 +548,10 @@ function attachClientCardListeners(card){
     });
 
     card.querySelector(".cp-delete-btn").addEventListener("click", ()=>{
-        card.remove();
-    });
+    if(!confirm(`¿Eliminar a ${card.dataset.name}?`)) return;
+    card.remove();
+    checkEmptyState(card.parentElement?.id || "clientsList");
+});
 }
 
 function renderClientCardHTML(name, phone, email, vehicle, source){
@@ -744,9 +850,10 @@ function createWorkshopTask(title, vehicle, delivery, status){
     });
 
     task.querySelector(".delete-task").addEventListener("click", ()=>{
-        task.remove();
-        updateWorkshopStats();
-    });
+    if(!confirm(`¿Eliminar tarea "${task.dataset.title}"?`)) return;
+    task.remove();
+    updateWorkshopStats();
+});
 
     workshopTasks.appendChild(task);
     updateWorkshopStats();
@@ -783,18 +890,24 @@ function updateTaskStyle(element, status){
 /* ── Actualizar contadores del taller ── */
 
 function updateWorkshopStats(){
-    const tasks = document.querySelectorAll(".workshop-task");
+    const tasks       = document.querySelectorAll(".workshop-task");
+    const serviceList = document.getElementById("serviceList");
+    const activeVehicles = serviceList
+        ? Array.from(serviceList.children).filter(c => !c.classList.contains("empty-state")).length
+        : 0;
 
     const activeCars = document.getElementById("activeCars");
-    if(activeCars) activeCars.textContent = tasks.length;
+    if(activeCars) activeCars.textContent = activeVehicles;
 
     let pending = 0;
-    tasks.forEach(task=>{
+    tasks.forEach(task => {
         if(task.querySelector(".task-select").value === "Pendiente") pending++;
     });
 
     const pendingJobs = document.getElementById("pendingJobs");
     if(pendingJobs) pendingJobs.textContent = pending;
+
+    checkEmptyState("workshopTasks");
 }
 
 /* ========================================
@@ -962,9 +1075,12 @@ function createInventoryCard(name, category, stock, price, alertEmail){
     });
 
     card.querySelector(".inv-delete").addEventListener("click", ()=>{
-        card.remove();
-        updateInventoryStats();
-    });
+    const nombre = card.querySelector(".inv-name").textContent;
+    if(!confirm(`¿Eliminar "${nombre}"?`)) return;
+    card.remove();
+    updateInventoryStats();
+    checkEmptyState("inventoryList");
+});
 
     list.appendChild(card);
 
@@ -1040,10 +1156,10 @@ if(_invSearch){
             
             // Usamos tu clase .hidden en lugar de modificar el style.display directamente
             if (cardText.includes(query)) {
-                card.classList.remove("hidden");
-            } else {
-                card.classList.add("hidden");
-            }
+    card.classList.remove("inv-hidden");
+} else {
+    card.classList.add("inv-hidden");
+}
         });
     });
 }
@@ -1347,4 +1463,4 @@ if(clientSearchInput){
         });
     });
 }
-
+initEmptyStates();
