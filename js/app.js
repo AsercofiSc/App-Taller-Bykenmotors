@@ -1,3 +1,46 @@
+/* ========================================
+   SISTEMA DE CARGA ASÍNCRONA (LOADER)
+======================================== */
+(function() {
+    document.addEventListener("DOMContentLoaded", () => {
+        const fill = document.getElementById("loaderFill");
+        const status = document.getElementById("loaderStatus");
+        const loader = document.getElementById("appLoader");
+        
+        if (!fill || !status || !loader) return;
+
+        // Fases secuenciales de carga simulada de módulos
+        const stages = [
+            { percentage: 25, text: "Cargando módulos principales..." },
+            { percentage: 60, text: "Estableciendo conexión local..." },
+            { percentage: 85, text: "Sincronizando base de datos..." },
+            { percentage: 100, text: "Sistema listo" }
+        ];
+
+        let currentStage = 0;
+
+        function processLoading() {
+            if (currentStage >= stages.length) {
+                // Desvanecimiento controlado con clases de CSS
+                setTimeout(() => {
+                    loader.classList.add("loaded");
+                }, 250);
+                return;
+            }
+
+            const stage = stages[currentStage];
+            fill.style.width = `${stage.percentage}%`;
+            status.textContent = stage.text;
+
+            currentStage++;
+            // Genera variaciones de tiempo realistas entre pasos
+            setTimeout(processLoading, 350 + Math.random() * 200);
+        }
+
+        // Retraso inicial mínimo antes de arrancar la animación de barra
+        setTimeout(processLoading, 150);
+    });
+})();
 /* =========================
    ELEMENTOS PRINCIPALES
 ========================= */
@@ -287,6 +330,7 @@ addButtons.forEach(button=>{
         document.getElementById("vehiclePlate").value = "";
         document.getElementById("vehicleColor").value = "";
         document.getElementById("vehicleOwner").value = "";
+        document.getElementById("vehicleNotes").value = "";
 
     });
 });
@@ -307,6 +351,8 @@ saveVehicleBtn.addEventListener("click", ()=>{
     const plate = document.getElementById("vehiclePlate").value.trim();
     const color = document.getElementById("vehicleColor").value.trim();
     const owner = document.getElementById("vehicleOwner").value.trim();
+    // ---> AÑADE ESTA LÍNEA AQUÍ:
+    const notes = document.getElementById("vehicleNotes").value.trim();
 
     if(!brand || !model) return;
 
@@ -326,7 +372,8 @@ saveVehicleBtn.addEventListener("click", ()=>{
         `${brand} ${model}`,
         currentTarget,
         year, plate, color, owner, today,
-        info.label, info.cls
+        info.label, info.cls,
+        notes // <--- NUEVO PARÁMETRO
     );
 
     // 2. Auto-registrar cliente si no existe
@@ -363,13 +410,14 @@ saveVehicleBtn.addEventListener("click", ()=>{
    CREATE VEHICLE CARD
 ========================= */
 
-function createVehicleCard(name, target, year, plate, color, owner, date, statusLabel, statusClass){
+function createVehicleCard(name, target, year, plate, color, owner, date, statusLabel, statusClass, notes = ""){
 
     const card = document.createElement("div");
     card.className           = "vp-card";
     card.dataset.vehicleName = name;
     card.dataset.owner       = owner || "";
 
+    // 2. Modifica el innerHTML agregando la validación condicional de las notas:
     card.innerHTML = `
         <div class="vp-card-left">
             <span class="vp-card-name">${name} &nbsp;·&nbsp; ${plate || "Sin placa"}</span>
@@ -380,6 +428,7 @@ function createVehicleCard(name, target, year, plate, color, owner, date, status
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
                 ${year || "—"}
             </span>
+            ${notes ? `<span class="vp-card-notes"><strong>Notas:</strong> ${notes}</span>` : ""}
             <span class="vp-card-status ${statusClass}">${statusLabel}</span>
         </div>
         <div class="vp-card-right">
@@ -429,7 +478,6 @@ function createVehicleCard(name, target, year, plate, color, owner, date, status
     updateCounts();
     updateWorkshopStats();
 }
-
 /* =========================
    AUTO ABRIR MODAL TALLER
 ========================= */

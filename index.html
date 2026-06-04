@@ -24,16 +24,14 @@
 
     <!-- LOADER -->
 
-    <div class="loader-screen">
-
-        <div class="loader-box">
-
-            <div class="loader-circle"></div>
-
-            <h2>Iniciando Taller...</h2>
-
+    <div class="loader-screen" id="appLoader">
+        <div class="loader-core">
+            <div class="loader-brand">Lumina Mechanic</div>
+            <div class="loader-track">
+                <div class="loader-fill" id="loaderFill"></div>
+            </div>
+            <div class="loader-status" id="loaderStatus">Iniciando sistema...</div>
         </div>
-
     </div>
 
     <!-- LOGIN -->
@@ -696,11 +694,17 @@
                 id="vehicleColor"
                 placeholder="Color"
             >
+            >
             <input
                 type="text"
                 id="vehicleOwner"
                 placeholder="Nombre del dueño"
->
+            >
+            <input
+                type="text"
+                id="vehicleNotes"
+                placeholder="Notas u observaciones"
+            >
 
         </div>
 
