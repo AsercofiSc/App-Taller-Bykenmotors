@@ -4743,3 +4743,38 @@ fadeGlow 2.5s ease-in-out infinite;
     border: none !important;
     box-shadow: none !important;
 }
+/* ========================================
+   ÚLTIMO SERVICIO — CLIENTE
+======================================== */
+
+.cp-last-service {
+    font-size: .70rem;
+    color: #34c759;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 2px;
+}
+.inv-edit {
+    width: 28px !important;
+    height: 28px !important;
+    min-width: 28px !important;
+    padding: 0 !important;
+    border-radius: 8px !important;
+    background: rgba(10,132,255,.10) !important;
+    color: #0a84ff !important;
+    border: none !important;
+    font-size: .75rem !important;
+    cursor: pointer !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    box-shadow: none !important;
+    transition: .2s !important;
+}
+
+.inv-edit:hover {
+    background: rgba(10,132,255,.22) !important;
+    transform: scale(1.08) !important;
+}

@@ -607,8 +607,9 @@ const clientsList          = document.getElementById("clientsList");
 const serviceClientsList   = document.getElementById("serviceClientsList");
 const externalClientsList  = document.getElementById("externalClientsList");
 
-let editingClientCard = null;
-let editingTaskEl     = null;
+let editingClientCard    = null;
+let editingTaskEl        = null;
+let editingInventoryCard = null;
 
 function openClientModalForNew(section = "recent"){
     editingClientCard = null;
@@ -669,7 +670,7 @@ function attachClientCardListeners(card){
 });
 }
 
-function renderClientCardHTML(name, phone, email, vehicle, source){
+function renderClientCardHTML(name, phone, email, vehicle, source, lastService, lastServiceDate){
     const initials = name.split(" ").map(w => w[0]).join("").toUpperCase().slice(0,2);
     const sourceIcons = {
         directo:   `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>`,
@@ -694,6 +695,7 @@ function renderClientCardHTML(name, phone, email, vehicle, source){
     <span class="cp-vehicle">${svgCar} ${vehicle}</span>
     <span class="cp-vehicle-status vp-card-status" style="display:none;"></span>
 ` : ""}
+                ${lastService ? `<span class="cp-last-service">🔧 ${lastService} — ${lastServiceDate}</span>` : ""}
                 <span class="cp-source">${srcIcon} ${source}</span>
             </div>
         </div>
@@ -705,15 +707,17 @@ function renderClientCardHTML(name, phone, email, vehicle, source){
     `;
 }
 
-function createClientCard(name, phone, email, vehicle, source, target){
+function createClientCard(name, phone, email, vehicle, source, target, lastService, lastServiceDate){
     const card = document.createElement("div");
-    card.className       = "cp-card";
-    card.dataset.name    = name;
-    card.dataset.phone   = phone   || "";
-    card.dataset.email   = email   || "";
-    card.dataset.vehicle = vehicle || "";
-    card.dataset.source  = source  || "directo";
-    card.innerHTML = renderClientCardHTML(name, phone, email, vehicle, source);
+    card.className               = "cp-card";
+    card.dataset.name            = name;
+    card.dataset.phone           = phone           || "";
+    card.dataset.email           = email           || "";
+    card.dataset.vehicle         = vehicle         || "";
+    card.dataset.source          = source          || "directo";
+    card.dataset.lastService     = lastService     || "";
+    card.dataset.lastServiceDate = lastServiceDate || "";
+    card.innerHTML = renderClientCardHTML(name, phone, email, vehicle, source, lastService, lastServiceDate);
     attachClientCardListeners(card);
     target.appendChild(card);
 }
@@ -879,9 +883,17 @@ saveWorkshopTaskBtn.addEventListener("click", ()=>{
         updateWorkshopStats();
 
         // ── Si se edita y se marca Completado → sincronizar vehículo ──
-        if(status === "Completado"){
-            syncVehicleToReady(vehicle);
-        }
+       if(status === "Completado"){
+    syncVehicleToReady(vehicle, title);
+    task.style.transition = "opacity .6s ease, transform .6s ease";
+    task.style.background = "rgba(52,199,89,.12)";
+    task.style.borderColor = "rgba(52,199,89,.3)";
+    setTimeout(()=>{
+        task.style.opacity = "0";
+        task.style.transform = "translateX(30px)";
+        setTimeout(()=>{ task.remove(); updateWorkshopStats(); }, 600);
+    }, 2000);
+}
 
         editingTaskEl = null;
 
@@ -940,12 +952,19 @@ function createWorkshopTask(title, vehicle, delivery, status){
         updateWorkshopStats();
 
         if(statusSelect.value === "Completado"){
-            // ── SINCRONIZACIÓN: mover vehículo a "Listos" en Bitácora ──
-            syncVehicleToReady(task.dataset.vehicle);
-            addNotification("task", "✅ Completado", `${task.dataset.title} — ${task.dataset.vehicle}`);
-            addActivity("task", "Trabajo completado", `${task.dataset.title} · ${task.dataset.vehicle}`);
-            showCompletedBanner(task.dataset.title, task.dataset.vehicle);
-        }
+    syncVehicleToReady(task.dataset.vehicle, task.dataset.title);
+    addNotification("task", "✅ Completado", `${task.dataset.title} — ${task.dataset.vehicle}`);
+    addActivity("task", "Trabajo completado", `${task.dataset.title} · ${task.dataset.vehicle}`);
+    showCompletedBanner(task.dataset.title, task.dataset.vehicle);
+    task.style.transition = "opacity .6s ease, transform .6s ease";
+    task.style.background = "rgba(52,199,89,.12)";
+    task.style.borderColor = "rgba(52,199,89,.3)";
+    setTimeout(()=>{
+        task.style.opacity = "0";
+        task.style.transform = "translateX(30px)";
+        setTimeout(()=>{ task.remove(); updateWorkshopStats(); }, 600);
+    }, 2000);
+}
     });
 
     task.querySelector(".task-edit-btn").addEventListener("click", ()=>{
@@ -1200,7 +1219,23 @@ if(_saveInvBtn){
             return;
         }
 
-        createInventoryCard(name, category, stock, price, alertEmail);
+        if(editingInventoryCard !== null){
+            const c   = editingInventoryCard;
+            const icon = categoryIcons[category] || "📦";
+            c.dataset.fullName   = name;
+            c.dataset.name       = name.toLowerCase();
+            c.dataset.category   = category;
+            c.dataset.price      = price;
+            c.dataset.alertEmail = alertEmail;
+            c.querySelector(".inv-name").textContent         = name;
+            c.querySelector(".inv-category-tag").textContent = category;
+            c.querySelector(".inv-price").textContent        = `$${price.toLocaleString("es-MX")}`;
+            c.querySelector(".inv-icon").textContent         = icon;
+            editingInventoryCard = null;
+            document.querySelector("#inventoryModal h2").textContent = "Nuevo producto";
+        } else {
+            createInventoryCard(name, category, stock, price, alertEmail);
+        }
 
         nameEl.value  = "";
         catEl.value   = "";
@@ -1225,7 +1260,9 @@ function createInventoryCard(name, category, stock, price, alertEmail){
     card.dataset.stock      = stock;
     card.dataset.name       = name.toLowerCase();
     card.dataset.alertEmail = alertEmail || "";
-
+    card.dataset.fullName   = name;
+    card.dataset.category   = category;
+    card.dataset.price      = price;
     card.innerHTML = `
         <div class="inv-card-top">
             <div class="inv-icon">${icon}</div>
@@ -1244,7 +1281,8 @@ function createInventoryCard(name, category, stock, price, alertEmail){
                 <span class="stock-display">${stock}</span>
                 <button class="stock-plus">+</button>
             </div>
-            <button class="inv-delete">✕</button>
+           <button class="inv-edit">✏</button>
+           <button class="inv-delete">✕</button>
         </div>
     `;
 
@@ -1269,6 +1307,16 @@ function createInventoryCard(name, category, stock, price, alertEmail){
     updateInventoryStats();
     checkEmptyState("inventoryList");
 });
+card.querySelector(".inv-edit").addEventListener("click", ()=>{
+        editingInventoryCard = card;
+        document.getElementById("inventoryName").value       = card.dataset.fullName;
+        document.getElementById("inventoryCategory").value   = card.dataset.category;
+        document.getElementById("inventoryStock").value      = card.dataset.stock;
+        document.getElementById("inventoryPrice").value      = card.dataset.price;
+        document.getElementById("inventoryAlertEmail").value = card.dataset.alertEmail;
+        document.querySelector("#inventoryModal h2").textContent = "Editar producto";
+        inventoryModal.classList.remove("hidden");
+    });
 
     list.appendChild(card);
 
@@ -1532,7 +1580,7 @@ function notifyWhatsApp(vehicleName, phone){
  *    Mueve el vehículo a "Listos para entrega"
  *    en Bitácora y añade el botón "→ Entregar".
  */
-function syncVehicleToReady(vehicleName){
+function syncVehicleToReady(vehicleName, taskTitle){
     if(!vehicleName) return;
 
     const searchName = vehicleName.toLowerCase().trim();
@@ -1550,6 +1598,9 @@ function syncVehicleToReady(vehicleName){
             statusEl.className   = "vp-card-status status-listo";
             statusEl.textContent = "Listo";
         }
+        // Guardar último servicio
+        card.dataset.lastService     = taskTitle || "Servicio realizado";
+        card.dataset.lastServiceDate = new Date().toLocaleDateString("es-MX");
 
         // Quitar botón "→ Servicio" si aún existe
         const oldBtn = card.querySelector(".vp-move-service:not(.vp-deliver-btn)");
@@ -1641,14 +1692,27 @@ function syncClientToNextService(card){
         }
     });
 
+    const lastService     = card.dataset.lastService     || "";
+    const lastServiceDate = card.dataset.lastServiceDate || "";
+
     if(existingCard){
-        // Solo moverlo si no está ya en "Próximos a servicio"
+        existingCard.dataset.lastService     = lastService;
+        existingCard.dataset.lastServiceDate = lastServiceDate;
+        existingCard.innerHTML = renderClientCardHTML(
+            existingCard.dataset.name,
+            existingCard.dataset.phone,
+            existingCard.dataset.email,
+            existingCard.dataset.vehicle,
+            existingCard.dataset.source,
+            lastService,
+            lastServiceDate
+        );
+        attachClientCardListeners(existingCard);
         if(existingCard.parentElement?.id !== "serviceClientsList"){
             targetList.appendChild(existingCard);
         }
     } else {
-        // Crear tarjeta nueva en "Próximos a servicio"
-        createClientCard(ownerName, "", "", vehicleName, "directo", targetList);
+        createClientCard(ownerName, "", "", vehicleName, "directo", targetList, lastService, lastServiceDate);
     }
 
     addNotification("client", "Próximo servicio", `${ownerName} — agendar revisión`);
