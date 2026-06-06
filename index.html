@@ -8,10 +8,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <meta name="theme-color" content="#f5f5f7">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 
-    <meta name="apple-mobile-web-app-capable" content="yes">
+<!-- PWA Manifest (Android + Chrome) -->
+<link rel="manifest" href="./manifest.json">
 
-    <meta name="mobile-web-app-capable" content="yes">
+<!-- iPhone: ícono que aparece en la pantalla de inicio -->
+<!-- Safari NO lee el manifest.json para esto, necesita su propio tag -->
+<link rel="apple-touch-icon" href="./assets/icons/icon-192.png">
+
+<!-- iPhone: nombre que aparece bajo el ícono al anclar -->
+<meta name="apple-mobile-web-app-title" content="Taller App">
+
+<!-- iPhone: oculta la barra de Safari cuando se abre instalada -->
+<!-- "default" = barra de estado normal con hora/batería -->
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 
     <title>Taller App</title>
 
@@ -819,6 +831,37 @@
 
 </div>
 <script src="js/app.js"></script>
+
+<!-- REGISTRO DEL SERVICE WORKER
+     Esto conecta tu página con sw.js.
+     
+     "serviceWorker" in navigator → verifica que
+     el navegador lo soporte (todos los modernos sí).
+     Sin esta verificación, en IE o Safari muy viejo
+     daría error.
+     
+     window.addEventListener("load") → espera a que
+     toda la página cargue antes de registrar el SW.
+     Así no compite con la carga inicial y no ralentiza.
+     
+     register("./sw.js") → le dice al navegador dónde
+     está el archivo sw.js y lo instala en segundo plano.
+-->
+<script>
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker
+        .register("./sw.js")
+        .then((registro) => {
+          console.log("✅ SW registrado. Scope:", registro.scope);
+        })
+        .catch((error) => {
+          console.error("❌ SW no se pudo registrar:", error);
+        });
+    });
+  }
+</script>
+
 </body>
 
 </html>

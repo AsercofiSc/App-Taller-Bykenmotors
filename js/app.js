@@ -273,6 +273,70 @@ function showContactSheet(ownerName, anchorEl){
         });
     }, 100);
 }
+/* =========================
+   CONTACT SHEET — CLIENTES
+========================= */
+function showClientContactSheet(card, anchorEl){
+    const existing = document.querySelector(".contact-sheet");
+    if(existing){ existing.remove(); return; }
+
+    const name  = card.dataset.name  || "Cliente";
+    const phone = card.dataset.phone || "";
+    const email = card.dataset.email || "";
+
+    if(!phone && !email){
+        alert("Sin teléfono ni correo registrado para este cliente.");
+        return;
+    }
+
+    const sheet = document.createElement("div");
+    sheet.className = "contact-sheet";
+
+    const rect = anchorEl.getBoundingClientRect();
+    sheet.style.top   = (rect.bottom + 8) + "px";
+    sheet.style.right = (window.innerWidth - rect.right) + "px";
+
+    sheet.innerHTML = `
+        <span class="contact-sheet-name">${name}</span>
+        ${phone ? `
+            <button class="contact-sheet-btn" id="csClientCall">📞 Llamar</button>
+            <button class="contact-sheet-btn" id="csClientWA">💬 WhatsApp</button>
+        ` : ""}
+        ${email ? `
+            <button class="contact-sheet-btn" id="csClientEmail">✉️ Enviar correo</button>
+        ` : ""}
+        ${!phone ? `<div style="padding:8px 14px;font-size:.78rem;color:#aaa;">Sin teléfono registrado</div>` : ""}
+    `;
+
+    if(phone){
+        sheet.querySelector("#csClientCall").addEventListener("click", ()=>{
+            window.open(`tel:${phone}`);
+            sheet.remove();
+        });
+        sheet.querySelector("#csClientWA").addEventListener("click", ()=>{
+            const msg = encodeURIComponent(`Hola ${name}, le contactamos del taller con información sobre su vehículo.`);
+            window.open(`https://wa.me/${phone.replace(/\D/g,'')}?text=${msg}`);
+            sheet.remove();
+        });
+    }
+
+    if(email){
+        sheet.querySelector("#csClientEmail").addEventListener("click", ()=>{
+            window.open(`mailto:${email}?subject=Información sobre su vehículo&body=Hola ${name},%0A%0ADesde el taller nos comunicamos con usted.`);
+            sheet.remove();
+        });
+    }
+
+    document.body.appendChild(sheet);
+    setTimeout(()=>{
+        document.addEventListener("click", function close(e){
+            if(!e.target.closest(".contact-sheet") && !e.target.closest(".cp-contact-btn")){
+                sheet.remove();
+                document.removeEventListener("click", close);
+            }
+        });
+    }, 100);
+}
 function showVehicleHistory(card){
     const existing = document.querySelector(".history-sheet");
     if(existing){ existing.remove(); return; }
@@ -518,6 +582,7 @@ function createVehicleCard(name, target, year, plate, color, owner, date, status
         contactBtn.addEventListener("click", (e)=>{
             e.stopPropagation();
             showContactSheet(owner, contactBtn);
+            
         });
     }
     card.querySelector(".vp-history-btn").addEventListener("click", (e) => {
@@ -793,9 +858,10 @@ function attachClientCardListeners(card){
         clientModal.classList.remove("hidden");
     });
 
-    card.querySelector(".cp-contact-btn").addEventListener("click", ()=>{
-        if(card.dataset.phone) window.open(`tel:${card.dataset.phone}`);
-    });
+    card.querySelector(".cp-contact-btn").addEventListener("click", (e)=>{
+    e.stopPropagation();
+    showClientContactSheet(card, card.querySelector(".cp-contact-btn"));
+});
 
    card.querySelector(".cp-delete-btn").addEventListener("click", ()=>{
     if(!confirm(`¿Eliminar a ${card.dataset.name}?`)) return;
