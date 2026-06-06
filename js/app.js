@@ -132,34 +132,33 @@ registerBtn.addEventListener("click", ()=>{
    LOGIN
 ========================= */
 
-loginForm.addEventListener("submit",(e)=>{
+/* =========================
+   LOGIN
+========================= */
 
+loginForm.addEventListener("submit", async (e) => {
     e.preventDefault();
 
-    const email =
-    document.querySelector('.login-form input[type="email"]').value;
+    const email    = document.querySelector('.login-form input[type="email"]').value.trim();
+    const password = document.querySelector('.login-form input[type="password"]').value;
+    const btn      = loginForm.querySelector("button[type='submit']");
 
-    const password =
-    document.querySelector('.login-form input[type="password"]').value;
+    btn.textContent = "Ingresando...";
+    btn.disabled    = true;
 
-    let users =
-    JSON.parse(localStorage.getItem("users")) || [];
+    // CORRECCIÓN: Se agrega 'data' a la desestructuración para evitar el ReferenceError
+    const { data, error } = await _supabase.auth.signInWithPassword({ email, password });
+    console.log("RESULTADO:", { data, error }); 
 
-    const validUser =
-    users.find(user =>
-        user.email === email &&
-        user.password === password
-    );
-
-    if(validUser){
-        document.querySelector(".login-page").style.display="none";
-        dashboard.classList.remove("hidden");
+    if(error){
+        alert("Correo o contraseña incorrectos: " + error.message);
+        btn.textContent = "Ingresar";
+        btn.disabled    = false;
     } else {
-        alert("Datos incorrectos");
+        document.querySelector(".login-page").style.display = "none";
+        dashboard.classList.remove("hidden");
     }
-
 });
-
 /* =========================
    ACTIVE NAV
 ========================= */
@@ -1945,8 +1944,9 @@ if(clientSearchInput){
 /* =========================
    LOGOUT
 ========================= */
-document.getElementById("logoutBtn")?.addEventListener("click", ()=>{
+document.getElementById("logoutBtn")?.addEventListener("click", async ()=>{
     if(!confirm("¿Cerrar sesión?")) return;
+    await _supabase.auth.signOut();
     hideAllPages();
     dashboard.classList.add("hidden");
     document.querySelector(".login-page").style.display = "flex";
@@ -2096,3 +2096,14 @@ loadWorkshopTasks();
 _isLoading = false;
 initEmptyStates();
 updateDashboardStats();
+/* ========================================
+   SESIÓN ACTIVA — Si ya estaba logueado
+   no le pide login de nuevo
+======================================== */
+(async function checkSession(){
+    const { data: { session } } = await _supabase.auth.getSession();
+    if(session){
+        document.querySelector(".login-page").style.display = "none";
+        dashboard.classList.remove("hidden");
+    }
+})();
