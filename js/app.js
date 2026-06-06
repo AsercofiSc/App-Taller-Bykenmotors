@@ -1,3 +1,28 @@
+// Traduce objetos de JavaScript (camelCase) al formato de Base de Datos (snake_case)
+function camelToSnake(obj) {
+    if (Array.isArray(obj)) return obj.map(camelToSnake);
+    if (obj !== null && typeof obj === 'object') {
+        return Object.keys(obj).reduce((acc, key) => {
+            const snakeKey = key.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
+            acc[snakeKey] = camelToSnake(obj[key]);
+            return acc;
+        }, {});
+    }
+    return obj;
+}
+
+// Traduce objetos de Base de Datos (snake_case) al formato de JavaScript (camelCase)
+function snakeToCamel(obj) {
+    if (Array.isArray(obj)) return obj.map(snakeToCamel);
+    if (obj !== null && typeof obj === 'object') {
+        return Object.keys(obj).reduce((acc, key) => {
+            const camelKey = key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+            acc[camelKey] = snakeToCamel(obj[key]);
+            return acc;
+        }, {});
+    }
+    return obj;
+}
 /* ========================================
    CAPA DE DATOS
    — swap DB.save/load por fetch() cuando
@@ -6,15 +31,67 @@
 let _isLoading = false;
 
 const DB = {
-    save(key, value){
-        try{ localStorage.setItem("tallerApp_" + key, JSON.stringify(value)); }
-        catch(e){ console.warn("DB.save:", e); }
+    tableName(key) {
+        const map = {
+            vehicles: "vehicles",
+            clients: "clients",
+            inventory: "inventory",
+            workshopTasks: "workshop_tasks"
+        };
+        return map[key] || key;
     },
-    load(key, fallback = null){
-        try{
-            const raw = localStorage.getItem("tallerApp_" + key);
-            return raw !== null ? JSON.parse(raw) : fallback;
-        } catch(e){ return fallback; }
+
+    async load(key, defaultData = []) {
+        try {
+            const { data: { session }, error: authError } = await _supabase.auth.getSession();
+            if (authError) throw authError;
+            if (!session) return defaultData;
+
+            const table = this.tableName(key);
+            
+            const { data, error } = await _supabase
+                .from(table)
+                .select('*')
+                .eq('user_id', session.user.id);
+
+            if (error) throw error;
+            
+            return data && data.length > 0 ? snakeToCamel(data) : defaultData;
+            
+        } catch (error) {
+            console.error(`Error al cargar ${key} desde Supabase:`, error);
+            return defaultData;
+        }
+    },
+
+    async save(key, dataArray) {
+        try {
+            const { data: { session } } = await _supabase.auth.getSession();
+            if (!session) return; 
+
+            const table = this.tableName(key);
+            
+            const formattedData = camelToSnake(dataArray).map(item => {
+                const row = { ...item, user_id: session.user.id };
+                
+                const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+                if (row.id && !uuidRegex.test(row.id)) {
+                    delete row.id; 
+                }
+                
+                return row;
+            });
+
+            await _supabase.from(table).delete().eq('user_id', session.user.id);
+
+            if (formattedData.length > 0) {
+                const { error } = await _supabase.from(table).insert(formattedData);
+                if (error) throw error;
+            }
+            
+        } catch (error) {
+            console.error(`Error al guardar ${key} en Supabase:`, error);
+        }
     }
 };
 /* ========================================
@@ -150,13 +227,16 @@ loginForm.addEventListener("submit", async (e) => {
     const { data, error } = await _supabase.auth.signInWithPassword({ email, password });
     console.log("RESULTADO:", { data, error }); 
 
-    if(error){
+   if(error){
         alert("Correo o contraseña incorrectos: " + error.message);
         btn.textContent = "Ingresar";
         btn.disabled    = false;
     } else {
         document.querySelector(".login-page").style.display = "none";
         dashboard.classList.remove("hidden");
+
+        // NUEVO: Descarga la información de Supabase cuando el usuario inicia sesión
+        await inicializarEstructurasDeUsuario();
     }
 });
 /* =========================
@@ -525,7 +605,10 @@ saveVehicleBtn.addEventListener("click", ()=>{
                 `${brand} ${model} (${plate || "Sin placa"})`,
                 "directo",
                 clientsList
+              
+    
             );
+            saveClients(); // <-- AÑADIR AQUÍ
         }
     }
 
@@ -868,6 +951,7 @@ function attachClientCardListeners(card){
     card.remove();
     checkEmptyState(parentId);
     updateDashboardStats();
+    saveClients(); // <-- AÑADIR AQUÍ
 });
 }
 
@@ -958,6 +1042,7 @@ saveClientBtn.addEventListener("click", ()=>{
     clientModal.classList.add("hidden");
     addNotification("client", "Cliente", `${name} registrado en taller`);
     addActivity("client", "Nuevo cliente", name);
+    saveClients(); // <-- AÑADIR AQUÍ
 });
 
 /* =========================
@@ -1109,6 +1194,7 @@ saveWorkshopTaskBtn.addEventListener("click", ()=>{
 
     addNotification("task", "Taller", `Tarea "${title}" guardada`);
     addActivity("task", "Nueva tarea de taller", `${title} — ${vehicle}`);
+    saveWorkshopTasks(); // <-- AÑADIR AQUÍ
 });
 
 /* ── Crear tarjeta de tarea ── */
@@ -1153,6 +1239,7 @@ function createWorkshopTask(title, vehicle, delivery, status){
         updateWorkshopStats();
 
         if(statusSelect.value === "Completado"){
+        saveWorkshopTasks(); // <-- AÑADIR AQUÍ
     syncVehicleToReady(task.dataset.vehicle, task.dataset.title);
     addNotification("task", "✅ Completado", `${task.dataset.title} — ${task.dataset.vehicle}`);
     addActivity("task", "Trabajo completado", `${task.dataset.title} · ${task.dataset.vehicle}`);
@@ -1191,6 +1278,7 @@ function createWorkshopTask(title, vehicle, delivery, status){
     if(!confirm(`¿Eliminar tarea "${task.dataset.title}"?`)) return;
     task.remove();
     updateWorkshopStats();
+    saveWorkshopTasks(); // <-- AÑADIR AQUÍ
 });
 
     workshopTasks.appendChild(task);
@@ -1448,6 +1536,7 @@ if(_saveInvBtn){
 
         addNotification("inventory", "Inventario", `${name} agregado (${stock} uds)`);
         addActivity("inventory", "Producto en stock", `${name} · $${price}`);
+        saveInventory(); // <-- AÑADIR AQUÍ
     });
 }
 
@@ -1561,6 +1650,7 @@ function refreshCardStock(card, stock){
     }
 
     updateInventoryStats();
+    saveInventory(); // <-- AÑADIR AQUÍ
 }
 
 function updateInventoryStats(){
@@ -1926,6 +2016,7 @@ function syncClientToNextService(card){
 
     addNotification("client", "Próximo servicio", `${ownerName} — agendar revisión`);
     addActivity("client", "Cliente → próximo servicio", `${ownerName} · ${vehicleName}`);
+    saveClients(); // <-- AÑADIR AQUÍ
 }
 /* ========================================
    SISTEMA DE BÚSQUEDA — CLIENTES
@@ -1973,7 +2064,7 @@ function saveVehicles(){
                 date:            card.dataset.date        || "",
                 lastService:     card.dataset.lastService     || "",
                 lastServiceDate: card.dataset.lastServiceDate || "",
-                history: card.dataset.history || "[]",
+                history: JSON.parse(card.dataset.history || "[]"),
                 statusLabel: statusEl ? statusEl.textContent.trim() : "Ingresado",
                 statusClass: statusEl
                     ? (Array.from(statusEl.classList).find(c => c.startsWith("status-")) || "status-ingresado")
@@ -2038,29 +2129,30 @@ function saveWorkshopTasks(){
    CARGAR ESTADO
 ======================================== */
 
-function loadVehicles(){
-    const data = DB.load("vehicles", []);
+/* ========================================
+   FUNCIONES DE CARGA ASÍNCRONAS (SUPABASE)
+======================================== */
+async function loadVehicles(){
+    // DB.load ahora es asíncrono y espera la respuesta de Supabase
+    const data = await DB.load("vehicles", []);
     data.forEach(v => {
         const target = document.getElementById(v.listId);
         if(!target) return;
         const card = createVehicleCard(
-            v.name, target,
-            v.year, v.plate, v.color, v.owner, v.date,
-            v.statusLabel || "Ingresado",
-            v.statusClass  || "status-ingresado",
-            v.notes
+            v.name, target, v.year, v.plate,
+            v.color, v.owner, v.date,
+            v.statusLabel, v.statusClass, v.notes
         );
         if(card){
-            card.dataset.lastService     = v.lastService     || "";
-            card.dataset.lastServiceDate = v.lastServiceDate || "";
-            card.dataset.history = v.history || "[]";
-            if(v.listId === "readyList") addDeliverButton(card);
+            if(v.listId === "readyList") {
+                if(typeof addDeliverButton === "function") addDeliverButton(card);
+            }
         }
     });
 }
 
-function loadClients(){
-    const data = DB.load("clients", []);
+async function loadClients(){
+    const data = await DB.load("clients", []);
     data.forEach(c => {
         const target = document.getElementById(c.listId);
         if(!target) return;
@@ -2072,38 +2164,53 @@ function loadClients(){
     });
 }
 
-function loadInventory(){
-    const data = DB.load("inventory", []);
+async function loadInventory(){
+    const data = await DB.load("inventory", []);
     data.forEach(item => {
         createInventoryCard(item.name, item.category, item.stock, item.price, item.alertEmail);
     });
 }
 
-function loadWorkshopTasks(){
-    const data = DB.load("workshopTasks", []);
+async function loadWorkshopTasks(){
+    const data = await DB.load("workshopTasks", []);
     data.forEach(t => createWorkshopTask(t.title, t.vehicle, t.delivery, t.status));
 }
 
 /* ========================================
-   ARRANQUE — carga persistencia
+   FLUJO DE INICIALIZACIÓN DE DATOS
 ======================================== */
+async function inicializarEstructurasDeUsuario() {
+    _isLoading = true;
+    
+    // Ejecuta las descargas una tras otra esperando que terminen
+    await loadVehicles();
+    await loadClients();
+    await loadInventory();
+    await loadWorkshopTasks();
+    
+    _isLoading = false;
+    initEmptyStates();
+    updateDashboardStats();
+}
 
-_isLoading = true;
-loadVehicles();
-loadClients();
-loadInventory();
-loadWorkshopTasks();
-_isLoading = false;
-initEmptyStates();
-updateDashboardStats();
 /* ========================================
-   SESIÓN ACTIVA — Si ya estaba logueado
-   no le pide login de nuevo
+   VERIFICACIÓN DE SESIÓN AL INICIAR LA APP
 ======================================== */
 (async function checkSession(){
-    const { data: { session } } = await _supabase.auth.getSession();
-    if(session){
-        document.querySelector(".login-page").style.display = "none";
-        dashboard.classList.remove("hidden");
+    try {
+        // Le pregunta a Supabase de manera segura si hay una sesión guardada
+        const { data: { session }, error } = await _supabase.auth.getSession();
+        if (error) throw error;
+
+        if (session) {
+            // Si el usuario ya estaba logueado, oculta el login y muestra el dashboard
+            document.querySelector(".login-page").style.display = "none";
+            dashboard.classList.remove("hidden");
+            
+            // Descarga los datos de este usuario específico
+            await inicializarEstructurasDeUsuario();
+        }
+    } catch (e) {
+        console.error("Error al comprobar sesión inicial:", e);
     }
 })();
