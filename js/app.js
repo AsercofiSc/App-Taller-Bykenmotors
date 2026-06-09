@@ -30,6 +30,35 @@ function snakeToCamel(obj) {
 ======================================== */
 let _isLoading = false;
 
+/* ── TOAST DE GUARDADO ── */
+let _saveCount = 0;
+let _toastTimer = null;
+
+function showSaveToast(state){
+    let el = document.getElementById("saveToast");
+    if(!el){
+        el = document.createElement("div");
+        el.id = "saveToast";
+        el.className = "save-toast";
+        document.body.appendChild(el);
+    }
+    clearTimeout(_toastTimer);
+    el.classList.remove("toast-ok","toast-error");
+
+    if(state === "saving"){
+        el.textContent = "Guardando...";
+        el.classList.add("visible");
+    } else if(state === "ok"){
+        el.textContent = "✓ Guardado";
+        el.classList.add("visible","toast-ok");
+        _toastTimer = setTimeout(() => el.classList.remove("visible","toast-ok"), 1800);
+    } else if(state === "error"){
+        el.textContent = "❌ Error al guardar";
+        el.classList.add("visible","toast-error");
+        _toastTimer = setTimeout(() => el.classList.remove("visible","toast-error"), 3500);
+    }
+}
+
 const DB = {
     tableName(key) {
         const map = {
@@ -65,20 +94,20 @@ const DB = {
     },
 
     async save(key, dataArray) {
+        _saveCount++;
+        showSaveToast("saving");
         try {
             const { data: { session } } = await _supabase.auth.getSession();
-            if (!session) return; 
+            if (!session){ _saveCount = Math.max(0, _saveCount - 1); return; }
 
             const table = this.tableName(key);
-            
+
             const formattedData = camelToSnake(dataArray).map(item => {
                 const row = { ...item, user_id: session.user.id };
-                
                 const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
                 if (row.id && !uuidRegex.test(row.id)) {
-                    delete row.id; 
+                    delete row.id;
                 }
-                
                 return row;
             });
 
@@ -88,8 +117,13 @@ const DB = {
                 const { error } = await _supabase.from(table).insert(formattedData);
                 if (error) throw error;
             }
-            
+
+            _saveCount = Math.max(0, _saveCount - 1);
+            if(_saveCount === 0) showSaveToast("ok");
+
         } catch (error) {
+            _saveCount = Math.max(0, _saveCount - 1);
+            showSaveToast("error");
             console.error(`Error al guardar ${key} en Supabase:`, error);
         }
     }
@@ -97,6 +131,12 @@ const DB = {
 /* ========================================
    SISTEMA DE CARGA ASÍNCRONA (LOADER)
 ======================================== */
+function _tryHideLoader(){
+    if(window._loaderAnimDone && window._loaderDataDone){
+        const loader = document.getElementById("appLoader");
+        if(loader) loader.classList.add("loaded");
+    }
+}
 (function() {
     document.addEventListener("DOMContentLoaded", () => {
         const fill = document.getElementById("loaderFill");
@@ -118,9 +158,11 @@ const DB = {
         function processLoading() {
             if (currentStage >= stages.length) {
                 // Desvanecimiento controlado con clases de CSS
-                setTimeout(() => {
-                    loader.classList.add("loaded");
-                }, 250);
+              // Desvanecimiento cuando animación Y datos están listos
+        setTimeout(() => {
+            window._loaderAnimDone = true;
+            _tryHideLoader();
+        }, 250);
                 return;
             }
 
@@ -588,7 +630,7 @@ saveVehicleBtn.addEventListener("click", ()=>{
         const clientsList = document.getElementById("clientsList");
         let clientExists  = false;
 
-        clientsList.querySelectorAll(".cp-name").forEach(nameEl => {
+        document.querySelectorAll(".cp-card .cp-name").forEach(nameEl => {
             if(nameEl.textContent.toLowerCase() === owner.toLowerCase()){
                 clientExists = true;
             }
@@ -1172,10 +1214,10 @@ saveWorkshopTaskBtn.addEventListener("click", ()=>{
     task.style.transition = "opacity .6s ease, transform .6s ease";
     task.style.background = "rgba(52,199,89,.12)";
     task.style.borderColor = "rgba(52,199,89,.3)";
-    setTimeout(()=>{
+     setTimeout(()=>{
         task.style.opacity = "0";
         task.style.transform = "translateX(30px)";
-        setTimeout(()=>{ task.remove(); updateWorkshopStats(); }, 600);
+        setTimeout(()=>{ task.remove(); updateWorkshopStats(); saveWorkshopTasks(); }, 600);
     }, 2000);
 }
 
@@ -1249,7 +1291,7 @@ function createWorkshopTask(title, vehicle, delivery, status){
         setTimeout(()=>{
             task.style.opacity = "0";
             task.style.transform = "translateX(30px)";
-            setTimeout(()=>{ task.remove(); updateWorkshopStats(); }, 600);
+            setTimeout(()=>{ task.remove(); updateWorkshopStats(); saveWorkshopTasks(); }, 600);
         }, 2000);
     }
 });
@@ -2126,6 +2168,7 @@ if(clientSearchInput){
 document.getElementById("logoutBtn")?.addEventListener("click", async ()=>{
     if(!confirm("¿Cerrar sesión?")) return;
     await _supabase.auth.signOut();
+    limpiarDOM();
     hideAllPages();
     dashboard.classList.add("hidden");
     document.querySelector(".login-page").style.display = "flex";
@@ -2184,19 +2227,23 @@ function saveClients(){
     DB.save("clients", data);
 }
 
+let _invSaveTimer = null;
 function saveInventory(){
     if(_isLoading) return;
-    const data = [];
-    document.querySelectorAll(".inventory-card").forEach(card => {
-        data.push({
-            name:       card.dataset.fullName   || "",
-            category:   card.dataset.category   || "",
-            stock:      parseInt(card.dataset.stock) || 0,
-            price:      parseFloat(card.dataset.price) || 0,
-            alertEmail: card.dataset.alertEmail || ""
+    clearTimeout(_invSaveTimer);
+    _invSaveTimer = setTimeout(() => {
+        const data = [];
+        document.querySelectorAll(".inventory-card").forEach(card => {
+            data.push({
+                name:       card.dataset.fullName   || "",
+                category:   card.dataset.category   || "",
+                stock:      parseInt(card.dataset.stock) || 0,
+                price:      parseFloat(card.dataset.price) || 0,
+                alertEmail: card.dataset.alertEmail || ""
+            });
         });
-    });
-    DB.save("inventory", data);
+        DB.save("inventory", data);
+    }, 600);
 }
 
 function saveWorkshopTasks(){
@@ -2274,8 +2321,32 @@ async function loadWorkshopTasks(){
 /* ========================================
    FLUJO DE INICIALIZACIÓN DE DATOS
 ======================================== */
+function limpiarDOM(){
+    [
+        "incomingList","serviceList","readyList","doneList",
+        "clientsList","serviceClientsList","externalClientsList",
+        "inventoryList","workshopTasks",
+        "dashVehiclesList","dashLowStockList"
+    ].forEach(id => {
+        const el = document.getElementById(id);
+        if(el) el.innerHTML = "";
+    });
+    const nc = document.querySelector(".notifications-container");
+    const al = document.querySelector(".activity-list");
+    if(nc) nc.innerHTML = "";
+    if(al) al.innerHTML = "";
+    ["incomingCount","serviceCount","readyCount","doneCount"].forEach(id => {
+        const el = document.getElementById(id);
+        if(el) el.textContent = "0";
+    });
+    ["dashActiveCars","dashPendingTasks","dashLowStock","dashClients"].forEach(id => {
+        const el = document.getElementById(id);
+        if(el) el.textContent = "0";
+    });
+}
 async function inicializarEstructurasDeUsuario() {
     _isLoading = true;
+    limpiarDOM();
     
     // Ejecuta las descargas una tras otra esperando que terminen
     await loadVehicles();
@@ -2295,19 +2366,20 @@ async function inicializarEstructurasDeUsuario() {
 ======================================== */
 (async function checkSession(){
     try {
-        // Le pregunta a Supabase de manera segura si hay una sesión guardada
         const { data: { session }, error } = await _supabase.auth.getSession();
         if (error) throw error;
 
         if (session) {
-            // Si el usuario ya estaba logueado, oculta el login y muestra el dashboard
             document.querySelector(".login-page").style.display = "none";
             dashboard.classList.remove("hidden");
-            
-            // Descarga los datos de este usuario específico
             await inicializarEstructurasDeUsuario();
         }
+        // Marcar datos como listos (con o sin sesión)
+        window._loaderDataDone = true;
+        _tryHideLoader();
     } catch (e) {
         console.error("Error al comprobar sesión inicial:", e);
+        window._loaderDataDone = true;
+        _tryHideLoader();
     }
 })();

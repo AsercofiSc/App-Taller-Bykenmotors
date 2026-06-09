@@ -5119,3 +5119,29 @@ fadeGlow 2.5s ease-in-out infinite;
 .inv-stock-green  { border-left: 4px solid #34c759; }
 .inv-stock-orange { border-left: 4px solid #ff9500; }
 .inv-stock-red    { border-left: 4px solid #ff3b30; }
+/* ── TOAST DE GUARDADO ── */
+.save-toast {
+    position: fixed;
+    bottom: 24px;
+    right: 20px;
+    padding: 8px 14px;
+    border-radius: 10px;
+    font-size: .75rem;
+    font-weight: 600;
+    color: #fff;
+    background: rgba(50,50,60,.85);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    box-shadow: 0 4px 16px rgba(0,0,0,.18);
+    z-index: 9999;
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity .2s ease, transform .2s ease;
+    pointer-events: none;
+}
+.save-toast.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+.save-toast.toast-ok    { background: rgba(52,199,89,.88); }
+.save-toast.toast-error { background: rgba(255,59,48,.88); }
