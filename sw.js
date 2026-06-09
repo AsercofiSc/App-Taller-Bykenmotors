@@ -123,8 +123,18 @@ self.addEventListener("activate", (evento) => {
    porque no están en el caché.
 ------------------------------------------ */
 self.addEventListener("fetch", (evento) => {
+  // EXCLUSIÓN CRÍTICA PARA MÓVILES: No interceptar peticiones de autenticación/APIs ni métodos POST/PUT/DELETE
+  if (
+    evento.request.method !== "GET" || 
+    evento.request.url.includes("supabase.co") || 
+    evento.request.url.includes("emailjs.com")
+  ) {
+    return; // Deja que la petición vaya directo a internet sin pasar por el caché
+  }
+
   evento.respondWith(
     caches.match(evento.request)
+// ... rest del código sin alterar absolutamente nada más de tu función original
       .then((archivoEnCache) => {
         
         if (archivoEnCache) {
