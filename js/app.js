@@ -476,7 +476,6 @@ navItems[3].addEventListener("click", ()=>{
     setActiveNav(3);
     workshopPage.classList.remove("hidden");
     updateWorkshopStats();
-    saveWorkshopTasks(); // ← AÑADIR al final
 });
 
 /* =========================
