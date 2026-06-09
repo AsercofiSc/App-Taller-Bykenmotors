@@ -12,23 +12,13 @@
    Eso fuerza al SW a actualizar el caché.
 ============================================= */
 
-const NOMBRE_CACHE = "taller-app-v1";
+// Cambiamos a v2 para forzar al móvil a borrar el caché viejo e instalar el nuevo
+const NOMBRE_CACHE = "taller-app-v2"; 
 
-/* ------------------------------------------
-   ARCHIVOS A GUARDAR EN CACHÉ
-   
-   Estos son los archivos que se descargan
-   la primera vez y se guardan localmente.
-   Después, la app los carga desde el
-   dispositivo, no desde internet.
-   
-   ⚠️ Si un archivo de esta lista no existe,
-   el SW falla completo. Verifica que todas
-   las rutas sean correctas.
------------------------------------------- */
 const ARCHIVOS = [
   "./index.html",
   "./css/style.css",
+  "./js/supabase-config.js", // <-- Agregamos este archivo obligatorio
   "./js/app.js",
   "./assets/img/fondo-login.png",
   "./assets/img/fondo-menu.png",
