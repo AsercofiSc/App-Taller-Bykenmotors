@@ -68,49 +68,38 @@
 
                 <form class="login-form">
 
-                    <div class="input-group">
+    <div class="input-group">
+        <label>Correo electrónico</label>
+        <input
+            type="email"
+            placeholder="correo@empresa.com"
+            autocomplete="email"
+        >
+    </div>
 
-                        <label>
-                            Correo electrónico
-                        </label>
+    <div class="input-group">
+        <label>Contraseña</label>
+        <div class="password-wrapper">
+            <input
+                type="password"
+                placeholder="••••••••"
+                id="loginPassword"
+                autocomplete="current-password"
+            >
+            <button type="button" id="togglePassword" class="toggle-pwd-btn">
+                <svg id="eyeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                </svg>
+            </button>
+        </div>
+    </div>
 
-                        <input
-                            type="email"
-                            placeholder="correo@empresa.com"
-                        >
+    <div id="loginError" class="login-error hidden"></div>
 
-                    </div>
+    <button type="submit">Ingresar</button>
 
-                    <div class="input-group">
-
-                        <label>
-                            Contraseña
-                        </label>
-
-                        <input
-                            type="password"
-                            placeholder="••••••••"
-                        >
-
-                    </div>
-
-                    <button type="submit">
-
-                        Ingresar
-
-                    </button>
-
-                    <p class="register-link">
-
-                        ¿No tienes cuenta?
-
-                        <span id="openRegister">
-                            Crear cuenta
-                        </span>
-
-                    </p>
-
-                </form>
+</form>
 
             </div>
 
@@ -200,33 +189,6 @@
 </div>
     <!-- MODAL REGISTRO -->
 
-    <div class="register-modal" id="registerModal">
-
-        <div class="register-card">
-
-            <h2>Crear Cuenta</h2>
-
-            <input
-                type="email"
-                id="registerEmail"
-                placeholder="Correo"
-            >
-
-            <input
-                type="password"
-                id="registerPassword"
-                placeholder="Contraseña"
-            >
-
-            <button id="registerBtn">
-
-                Registrar
-
-            </button>
-
-        </div>
-
-    </div>
 
     <!-- DASHBOARD -->
 
@@ -252,27 +214,67 @@
         height:auto;
     ">Cerrar sesión</button>
 </div>
-    <!-- STATS DASHBOARD -->
+<!-- STATS DASHBOARD -->
 <div class="dashboard-stats">
     <div class="dash-stat-card">
-        <span class="dash-stat-label">En taller</span>
-        <strong id="dashActiveCars">0</strong>
-        <span class="dash-stat-sub">vehículos activos</span>
+        <div class="dash-stat-info">
+            <span class="dash-stat-label">En taller</span>
+            <strong id="dashActiveCars">0</strong>
+            <span class="dash-stat-sub">vehículos activos</span>
+        </div>
+        <div class="dash-stat-icon dash-icon-blue">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><rect x="1" y="3" width="15" height="13" rx="2"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+        </div>
     </div>
     <div class="dash-stat-card">
-        <span class="dash-stat-label">Pendientes</span>
-        <strong id="dashPendingTasks">0</strong>
-        <span class="dash-stat-sub">tareas sin completar</span>
+        <div class="dash-stat-info">
+            <span class="dash-stat-label">Pendientes</span>
+            <strong id="dashPendingTasks">0</strong>
+            <span class="dash-stat-sub">tareas sin completar</span>
+        </div>
+        <div class="dash-stat-icon dash-icon-orange">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+        </div>
     </div>
-    <div class="dash-stat-card dash-stat-alert" id="dashLowStockCard">
-        <span class="dash-stat-label">Bajo stock</span>
-        <strong id="dashLowStock">0</strong>
-        <span class="dash-stat-sub">productos críticos</span>
+    <div class="dash-stat-card" id="dashLowStockCard">
+        <div class="dash-stat-info">
+            <span class="dash-stat-label">Bajo stock</span>
+            <strong id="dashLowStock">0</strong>
+            <span class="dash-stat-sub">productos críticos</span>
+        </div>
+        <div class="dash-stat-icon dash-icon-red">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M12.89 1.45l8 4A2 2 0 0 1 22 7.24v9.52a2 2 0 0 1-1.11 1.79l-8 4a2 2 0 0 1-1.78 0l-8-4A2 2 0 0 1 2 16.76V7.24a2 2 0 0 1 1.11-1.79l8-4a2 2 0 0 1 1.78 0z"/><polyline points="2.32 6.16 12 11 21.68 6.16"/><line x1="12" y1="22.76" x2="12" y2="11"/></svg>
+        </div>
     </div>
     <div class="dash-stat-card">
-        <span class="dash-stat-label">Clientes</span>
-        <strong id="dashClients">0</strong>
-        <span class="dash-stat-sub">registrados</span>
+        <div class="dash-stat-info">
+            <span class="dash-stat-label">Clientes</span>
+            <strong id="dashClients">0</strong>
+            <span class="dash-stat-sub">registrados</span>
+        </div>
+        <div class="dash-stat-icon dash-icon-purple">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        </div>
+    </div>
+</div>
+<!-- VEHÍCULOS EN PROCESO — DASHBOARD -->
+<div class="dash-section">
+    <div class="dash-section-header">
+        <h2 class="dash-section-title">Vehículos en proceso</h2>
+        <span class="dash-section-link" id="dashGoVehicles">Ver todos</span>
+    </div>
+    <div id="dashVehiclesList" class="dash-vehicles-list">
+        <p class="dash-empty-msg">Sin vehículos activos</p>
+    </div>
+</div>
+<!-- INVENTARIO BAJO — DASHBOARD -->
+<div class="dash-section">
+    <div class="dash-section-header">
+        <h2 class="dash-section-title">Inventario bajo</h2>
+        <span class="dash-section-link" id="dashGoInventory">Ver todos</span>
+    </div>
+    <div id="dashLowStockList" class="dash-vehicles-list">
+        <p class="dash-empty-msg">Sin productos en stock bajo</p>
     </div>
 </div>
 <!-- Notificacion -->
@@ -530,28 +532,28 @@
 
     </div>
 
-    <!-- STATS -->
+ <!-- STATS -->
 
     <div class="inventory-stats">
 
         <div class="inventory-stat-card">
-
             <span>Total</span>
-
-            <h2 id="totalProducts">
-                0
-            </h2>
-
+            <h2 id="totalProducts">0</h2>
         </div>
 
         <div class="inventory-stat-card low-stock">
-
             <span>Bajo stock</span>
+            <h2 id="lowStockCount">0</h2>
+        </div>
 
-            <h2 id="lowStockCount">
-                0
-            </h2>
+        <div class="inventory-stat-card">
+            <span>Categorías</span>
+            <h2 id="totalCategories">0</h2>
+        </div>
 
+        <div class="inventory-stat-card inv-stat-value">
+            <span>Valor total</span>
+            <h2 id="totalInventoryValue">$0</h2>
         </div>
 
     </div>

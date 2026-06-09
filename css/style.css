@@ -4622,8 +4622,10 @@ fadeGlow 2.5s ease-in-out infinite;
     padding: 16px;
     box-shadow: 0 6px 24px rgba(0,0,0,.10);
     display: flex;
-    flex-direction: column;
-    gap: 4px;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
     transition: .25s;
 }
 
@@ -4929,3 +4931,191 @@ fadeGlow 2.5s ease-in-out infinite;
     transition: .2s !important; flex-shrink: 0 !important;
 }
 .vp-history-btn:hover { background: rgba(10,132,255,.20) !important; }
+/* ── Toggle contraseña ── */
+.password-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.password-wrapper input {
+    width: 100%;
+    padding-right: 44px;
+}
+
+.toggle-pwd-btn {
+    position: absolute;
+    right: 12px;
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    color: rgba(255,255,255,0.5);
+    display: flex;
+    align-items: center;
+    height: auto;
+    box-shadow: none;
+    min-width: unset;
+}
+
+.toggle-pwd-btn:hover {
+    color: rgba(255,255,255,0.9);
+}
+
+/* ── Error inline login ── */
+.login-error {
+    background: rgba(255, 59, 48, 0.12);
+    border: 1px solid rgba(255, 59, 48, 0.3);
+    border-radius: 12px;
+    color: #ff6b6b;
+    font-size: 0.82rem;
+    font-weight: 500;
+    padding: 10px 14px;
+    text-align: center;
+    transition: opacity 0.3s ease;
+}
+
+.login-error.hidden {
+    display: none;
+}
+/* ========================================
+   DASH STAT CARDS — ICONOS
+======================================== */
+
+.dash-stat-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+}
+
+.dash-stat-icon {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.dash-icon-blue   { background: rgba(10,132,255,.12);  color: #0a84ff;  }
+.dash-icon-orange { background: rgba(255,149,0,.12);   color: #ff9500;  }
+.dash-icon-red    { background: rgba(255,59,48,.12);   color: #ff3b30;  }
+.dash-icon-purple { background: rgba(175,82,222,.12);  color: #af52de;  }
+
+/* ========================================
+   VEHÍCULOS EN PROCESO — DASHBOARD
+======================================== */
+
+.dash-section {
+    background: rgba(255,255,255,.78);
+    border: 1px solid rgba(200,200,210,.55);
+    backdrop-filter: blur(20px);
+    border-radius: 24px;
+    padding: 18px;
+    box-shadow: 0 6px 24px rgba(0,0,0,.10);
+}
+
+.dash-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+}
+
+.dash-section-title {
+    font-size: .88rem;
+    font-weight: 700;
+    color: #111;
+    letter-spacing: -.2px;
+}
+
+.dash-section-link {
+    font-size: .78rem;
+    font-weight: 600;
+    color: #ff9500;
+    cursor: pointer;
+}
+
+.dash-vehicles-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.dash-vehicle-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    background: rgba(245,245,247,.8);
+    border-radius: 14px;
+    border-left: 3px solid #ff9500;
+}
+
+.dash-veh-plate {
+    font-size: .82rem;
+    font-weight: 700;
+    color: #111;
+    min-width: 72px;
+}
+
+.dash-veh-owner {
+    font-size: .78rem;
+    color: #555;
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.dash-veh-date {
+    font-size: .72rem;
+    color: #aaa;
+    white-space: nowrap;
+}
+
+.dash-empty-msg {
+    font-size: .8rem;
+    color: #bbb;
+    text-align: center;
+    padding: 10px 0;
+}
+/* ========================================
+   INVENTARIO BAJO — DASHBOARD
+======================================== */
+
+.dash-stock-row {
+    border-left: none;
+    padding: 8px 12px;
+}
+.dash-stock-dot {
+    width: 8px;
+    height: 8px;
+    min-width: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.dot-red    { background: #ff3b30; }
+.dot-orange { background: #ff9500; }
+
+.dash-stock-badge {
+    font-size: .72rem;
+    font-weight: 700;
+    padding: 3px 9px;
+    border-radius: 20px;
+    flex-shrink: 0;
+}
+
+.badge-red    { background: rgba(255,59,48,.12);  color: #ff3b30; }
+.badge-orange { background: rgba(255,149,0,.12);  color: #ff9500; }
+/* ========================================
+   INDICADOR DE COLOR — INVENTARIO
+======================================== */
+
+.inv-stock-green  { border-left: 4px solid #34c759; }
+.inv-stock-orange { border-left: 4px solid #ff9500; }
+.inv-stock-red    { border-left: 4px solid #ff3b30; }

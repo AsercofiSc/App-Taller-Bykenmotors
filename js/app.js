@@ -141,14 +141,6 @@ const DB = {
    ELEMENTOS PRINCIPALES
 ========================= */
 
-const registerModal =
-document.getElementById("registerModal");
-
-const openRegister =
-document.getElementById("openRegister");
-
-const registerBtn =
-document.getElementById("registerBtn");
 
 const dashboard =
 document.getElementById("dashboard");
@@ -175,35 +167,6 @@ document.getElementById("workshopPage");
    REGISTER MODAL
 ========================= */
 
-openRegister.addEventListener("click", ()=>{
-    registerModal.style.display="flex";
-});
-
-registerBtn.addEventListener("click", ()=>{
-
-    const email =
-    document.getElementById("registerEmail").value;
-
-    const password =
-    document.getElementById("registerPassword").value;
-
-    let users =
-    JSON.parse(localStorage.getItem("users")) || [];
-
-    if(users.length >= 5){
-        alert("Máximo 5 usuarios");
-        return;
-    }
-
-    users.push({ email, password });
-
-    localStorage.setItem("users", JSON.stringify(users));
-
-    alert("Usuario registrado");
-
-    registerModal.style.display="none";
-
-});
 
 /* =========================
    LOGIN
@@ -228,10 +191,15 @@ loginForm.addEventListener("submit", async (e) => {
     console.log("RESULTADO:", { data, error }); 
 
    if(error){
-        alert("Correo o contraseña incorrectos: " + error.message);
-        btn.textContent = "Ingresar";
-        btn.disabled    = false;
-    } else {
+    const errorEl = document.getElementById("loginError");
+    if(errorEl){
+        errorEl.textContent = "Correo o contraseña incorrectos";
+        errorEl.classList.remove("hidden");
+        setTimeout(() => errorEl.classList.add("hidden"), 4000);
+    }
+    btn.textContent = "Ingresar";
+    btn.disabled    = false;
+} else {
         document.querySelector(".login-page").style.display = "none";
         dashboard.classList.remove("hidden");
 
@@ -239,6 +207,24 @@ loginForm.addEventListener("submit", async (e) => {
         await inicializarEstructurasDeUsuario();
     }
 });
+/* =========================
+   TOGGLE CONTRASEÑA
+========================= */
+const togglePwd = document.getElementById("togglePassword");
+if(togglePwd){
+    togglePwd.addEventListener("click", () => {
+        const input = document.getElementById("loginPassword");
+        const icon  = document.getElementById("eyeIcon");
+        const isHidden = input.type === "password";
+        input.type = isHidden ? "text" : "password";
+        icon.innerHTML = isHidden
+            ? `<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+               <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+               <line x1="1" y1="1" x2="23" y2="23"/>`
+            : `<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+               <circle cx="12" cy="12" r="3"/>`;
+    });
+}
 /* =========================
    ACTIVE NAV
 ========================= */
@@ -497,6 +483,18 @@ navItems[3].addEventListener("click", ()=>{
    BACK BUTTONS
 ========================= */
 
+document.getElementById("dashGoInventory")?.addEventListener("click", ()=>{
+    hideAllPages();
+    setActiveNav(2);
+    inventoryPage.classList.remove("hidden");
+    updateInventoryStats();
+});
+document.getElementById("dashGoVehicles")?.addEventListener("click", ()=>{
+    hideAllPages();
+    setActiveNav(0);
+    vehiclesPage.classList.remove("hidden");
+    updateCounts();
+});
 document.getElementById("backDashboard").addEventListener("click", ()=>{
     hideAllPages();
     dashboard.classList.remove("hidden");
@@ -756,6 +754,7 @@ function updateCounts(){
         checkEmptyState(listId);
     });
     updateDashboardStats();
+    updateDashVehicles();
     saveVehicles(); // ← AÑADIR
 }
 /* =========================
@@ -1235,25 +1234,26 @@ function createWorkshopTask(title, vehicle, delivery, status){
     updateTaskStyle(statusSelect, status);
 
     statusSelect.addEventListener("change", ()=>{
-        updateTaskStyle(statusSelect, statusSelect.value);
-        updateWorkshopStats();
+    updateTaskStyle(statusSelect, statusSelect.value);
+    task.dataset.status = statusSelect.value; // ← actualizar dataset
+    updateWorkshopStats();
+    saveWorkshopTasks(); // ← guardar en CUALQUIER cambio de estado
 
-        if(statusSelect.value === "Completado"){
-        saveWorkshopTasks(); // <-- AÑADIR AQUÍ
-    syncVehicleToReady(task.dataset.vehicle, task.dataset.title);
-    addNotification("task", "✅ Completado", `${task.dataset.title} — ${task.dataset.vehicle}`);
-    addActivity("task", "Trabajo completado", `${task.dataset.title} · ${task.dataset.vehicle}`);
-    showCompletedBanner(task.dataset.title, task.dataset.vehicle);
-    task.style.transition = "opacity .6s ease, transform .6s ease";
-    task.style.background = "rgba(52,199,89,.12)";
-    task.style.borderColor = "rgba(52,199,89,.3)";
-    setTimeout(()=>{
-        task.style.opacity = "0";
-        task.style.transform = "translateX(30px)";
-        setTimeout(()=>{ task.remove(); updateWorkshopStats(); }, 600);
-    }, 2000);
-}
-    });
+    if(statusSelect.value === "Completado"){
+        syncVehicleToReady(task.dataset.vehicle, task.dataset.title);
+        addNotification("task", "✅ Completado", `${task.dataset.title} — ${task.dataset.vehicle}`);
+        addActivity("task", "Trabajo completado", `${task.dataset.title} · ${task.dataset.vehicle}`);
+        showCompletedBanner(task.dataset.title, task.dataset.vehicle);
+        task.style.transition = "opacity .6s ease, transform .6s ease";
+        task.style.background = "rgba(52,199,89,.12)";
+        task.style.borderColor = "rgba(52,199,89,.3)";
+        setTimeout(()=>{
+            task.style.opacity = "0";
+            task.style.transform = "translateX(30px)";
+            setTimeout(()=>{ task.remove(); updateWorkshopStats(); }, 600);
+        }, 2000);
+    }
+});
 
     task.querySelector(".task-edit-btn").addEventListener("click", ()=>{
         editingTaskEl = task;
@@ -1540,13 +1540,18 @@ if(_saveInvBtn){
     });
 }
 
+function getStockColorClass(stock){
+    if(stock === 0)                 return "inv-stock-red";
+    if(stock < LOW_STOCK_THRESHOLD) return "inv-stock-orange";
+    return "inv-stock-green";
+}
 function createInventoryCard(name, category, stock, price, alertEmail){
     const list  = document.getElementById("inventoryList");
     const isLow = stock < LOW_STOCK_THRESHOLD;
     const icon  = categoryIcons[category] || "📦";
 
     const card = document.createElement("div");
-    card.className          = `inventory-card${isLow ? " low-stock-card" : ""}`;
+    card.className          = `inventory-card${isLow ? " low-stock-card" : ""} ${getStockColorClass(stock)}`;
     card.dataset.stock      = stock;
     card.dataset.name       = name.toLowerCase();
     card.dataset.alertEmail = alertEmail || "";
@@ -1636,6 +1641,9 @@ function refreshCardStock(card, stock){
     if(isLow) card.classList.add("low-stock-card");
     else      card.classList.remove("low-stock-card");
 
+    card.classList.remove("inv-stock-green", "inv-stock-orange", "inv-stock-red");
+    card.classList.add(getStockColorClass(stock));
+
     if(stock === LOW_STOCK_THRESHOLD - 1){
         fireNotification(name, stock);
         showAlertBanner(name, stock, alertEmail);
@@ -1650,16 +1658,97 @@ function refreshCardStock(card, stock){
     }
 
     updateInventoryStats();
+    updateDashLowStock();
     saveInventory(); // <-- AÑADIR AQUÍ
 }
 
+
+/* ========================================
+   VEHÍCULOS EN PROCESO — DASHBOARD
+======================================== */
+function updateDashVehicles(){
+    const container = document.getElementById("dashVehiclesList");
+    if(!container) return;
+
+    const rows = [];
+    ["incomingList","serviceList"].forEach(listId => {
+        document.querySelectorAll(`#${listId} .vp-card`).forEach(card => {
+            const statusEl = card.querySelector(".vp-card-status");
+            rows.push({
+                plate:       card.dataset.plate  || "Sin placa",
+                owner:       card.dataset.owner  || "Sin dueño",
+                date:        card.dataset.date   || "",
+                statusLabel: statusEl?.textContent.trim() || "Ingresado",
+                statusClass: Array.from(statusEl?.classList || []).find(c => c.startsWith("status-")) || "status-ingresado"
+            });
+        });
+    });
+
+    if(rows.length === 0){
+        container.innerHTML = `<p class="dash-empty-msg">Sin vehículos activos</p>`;
+        return;
+    }
+
+    container.innerHTML = rows.map(r => `
+        <div class="dash-vehicle-row">
+            <span class="dash-veh-plate">${r.plate}</span>
+            <span class="vp-card-status ${r.statusClass}" style="font-size:.68rem;padding:3px 8px;">${r.statusLabel}</span>
+            <span class="dash-veh-owner">${r.owner}</span>
+            <span class="dash-veh-date">${r.date}</span>
+        </div>
+    `).join("");
+}
+/* ========================================
+   INVENTARIO BAJO — DASHBOARD
+======================================== */
+function updateDashLowStock(){
+    const container = document.getElementById("dashLowStockList");
+    if(!container) return;
+
+    const lowCards = [];
+    document.querySelectorAll(".inventory-card").forEach(card => {
+        const stock = parseInt(card.dataset.stock) || 0;
+        if(stock < LOW_STOCK_THRESHOLD){
+            lowCards.push({
+                name:     card.dataset.fullName || card.dataset.name || "Producto",
+                category: card.dataset.category || "",
+                stock:    stock
+            });
+        }
+    });
+
+    if(lowCards.length === 0){
+        container.innerHTML = `<p class="dash-empty-msg">Sin productos en stock bajo</p>`;
+        return;
+    }
+
+    container.innerHTML = lowCards.map(p => `
+        <div class="dash-vehicle-row dash-stock-row">
+            <div class="dash-stock-dot ${p.stock === 0 ? 'dot-red' : 'dot-orange'}"></div>
+            <span class="dash-veh-plate" style="min-width:auto;flex:1;">${p.name}</span>
+            <span class="dash-veh-owner" style="flex:none;color:#999;font-size:.72rem;">${p.category}</span>
+            <span class="dash-stock-badge ${p.stock === 0 ? 'badge-red' : 'badge-orange'}">${p.stock} uds</span>
+        </div>
+    `).join("");
+}
 function updateInventoryStats(){
     const cards  = document.querySelectorAll(".inventory-card");
-    let lowCount = 0;
-    cards.forEach(c =>{ if(parseInt(c.dataset.stock) < LOW_STOCK_THRESHOLD) lowCount++; });
+    let lowCount  = 0;
+    let totalValue = 0;
+    const categories = new Set();
 
-    document.getElementById("totalProducts").textContent = cards.length;
-    document.getElementById("lowStockCount").textContent = lowCount;
+    cards.forEach(c =>{
+        if(parseInt(c.dataset.stock) < LOW_STOCK_THRESHOLD) lowCount++;
+        const price = parseFloat(c.dataset.price) || 0;
+        const stock = parseInt(c.dataset.stock)  || 0;
+        totalValue += price * stock;
+        if(c.dataset.category) categories.add(c.dataset.category);
+    });
+
+    document.getElementById("totalProducts").textContent      = cards.length;
+    document.getElementById("lowStockCount").textContent      = lowCount;
+    document.getElementById("totalCategories").textContent    = categories.size;
+    document.getElementById("totalInventoryValue").textContent = "$" + totalValue.toLocaleString("es-MX");
 
     const navInv = navItems[2];
     const dot    = navInv.querySelector(".nav-low-stock-dot");
@@ -2133,7 +2222,6 @@ function saveWorkshopTasks(){
    FUNCIONES DE CARGA ASÍNCRONAS (SUPABASE)
 ======================================== */
 async function loadVehicles(){
-    // DB.load ahora es asíncrono y espera la respuesta de Supabase
     const data = await DB.load("vehicles", []);
     data.forEach(v => {
         const target = document.getElementById(v.listId);
@@ -2144,6 +2232,14 @@ async function loadVehicles(){
             v.statusLabel, v.statusClass, v.notes
         );
         if(card){
+            // Restaurar historial y último servicio desde Supabase
+            if(v.history && v.history.length > 0)
+                card.dataset.history = JSON.stringify(v.history);
+            if(v.lastService)
+                card.dataset.lastService = v.lastService;
+            if(v.lastServiceDate)
+                card.dataset.lastServiceDate = v.lastServiceDate;
+
             if(v.listId === "readyList") {
                 if(typeof addDeliverButton === "function") addDeliverButton(card);
             }
@@ -2191,6 +2287,8 @@ async function inicializarEstructurasDeUsuario() {
     _isLoading = false;
     initEmptyStates();
     updateDashboardStats();
+    updateDashVehicles();
+    updateDashLowStock();
 }
 
 /* ========================================
