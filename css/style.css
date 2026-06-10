@@ -3036,7 +3036,7 @@ fadeGlow 2.5s ease-in-out infinite;
 .clients-page,
 .inventory-page,
 .workshop-page{
-    background-image: url('../assets/img/fondo-secciones.png');
+background-image: url('../assets/img/fondo-menu.png');
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
@@ -5145,3 +5145,155 @@ fadeGlow 2.5s ease-in-out infinite;
 }
 .save-toast.toast-ok    { background: rgba(52,199,89,.88); }
 .save-toast.toast-error { background: rgba(255,59,48,.88); }
+/* ========================================
+   PIEZAS UTILIZADAS — MODAL TALLER
+======================================== */
+
+.vehicle-modal-card {
+    max-height: 88vh;
+    overflow-y: auto;
+}
+
+.parts-section {
+    margin-top: 4px;
+}
+
+.parts-toggle {
+    width: 100% !important;
+    background: rgba(10,132,255,.08) !important;
+    color: #0a84ff !important;
+    box-shadow: none !important;
+    border-radius: 14px !important;
+    padding: 12px 16px !important;
+    font-size: .88rem !important;
+    font-weight: 600 !important;
+    text-align: left !important;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    transition: background .2s !important;
+}
+
+.parts-toggle:hover {
+    background: rgba(10,132,255,.14) !important;
+    transform: none !important;
+    opacity: 1 !important;
+}
+
+.parts-toggle-arrow {
+    font-size: .75rem;
+    transition: transform .25s;
+}
+
+.parts-toggle-arrow.open {
+    transform: rotate(90deg);
+}
+
+.parts-body {
+    display: none;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 8px;
+    padding: 12px;
+    background: rgba(245,245,247,.7);
+    border-radius: 14px;
+    border: 1px solid rgba(0,0,0,.06);
+}
+
+.parts-body.open {
+    display: flex;
+}
+
+.part-row {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.part-row select,
+.part-row input[type="text"],
+.part-row input[type="number"] {
+    border: 1.5px solid rgba(0,0,0,.08);
+    border-radius: 10px;
+    background: white;
+    color: #111;
+    font-size: .82rem;
+    padding: 8px 10px;
+    outline: none;
+    transition: border-color .2s;
+}
+
+.part-row select:focus,
+.part-row input:focus {
+    border-color: rgba(10,132,255,.4);
+}
+
+.part-select {
+    flex: 1;
+}
+
+.part-qty {
+    width: 58px !important;
+    text-align: center;
+}
+
+.part-remove {
+    width: 28px !important;
+    height: 28px !important;
+    min-width: 28px !important;
+    padding: 0 !important;
+    border-radius: 8px !important;
+    background: rgba(255,59,48,.10) !important;
+    color: #ff3b30 !important;
+    font-size: .8rem !important;
+    box-shadow: none !important;
+    flex-shrink: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+.part-remove:hover {
+    background: rgba(255,59,48,.20) !important;
+    transform: none !important;
+}
+
+.add-part-btn {
+    width: 100% !important;
+    background: rgba(52,199,89,.10) !important;
+    color: #34c759 !important;
+    box-shadow: none !important;
+    border-radius: 10px !important;
+    padding: 8px !important;
+    font-size: .82rem !important;
+    font-weight: 600 !important;
+    margin-top: 2px !important;
+    transition: background .2s !important;
+}
+
+.add-part-btn:hover {
+    background: rgba(52,199,89,.18) !important;
+    transform: none !important;
+    opacity: 1 !important;
+}
+
+.parts-saved-list {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    margin-top: 4px;
+}
+
+.part-saved-row {
+    font-size: .75rem;
+    color: #555;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.part-saved-row::before {
+    content: "•";
+    color: #0a84ff;
+    font-weight: 700;
+}

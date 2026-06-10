@@ -536,25 +536,18 @@ document.getElementById("dashGoVehicles")?.addEventListener("click", ()=>{
     vehiclesPage.classList.remove("hidden");
     updateCounts();
 });
-document.getElementById("backDashboard").addEventListener("click", ()=>{
+function goBackToDashboard(){
     hideAllPages();
     dashboard.classList.remove("hidden");
-});
+    updateDashboardStats();
+    updateDashVehicles();
+    updateDashLowStock();
+}
 
-document.getElementById("backFromClients").addEventListener("click", ()=>{
-    hideAllPages();
-    dashboard.classList.remove("hidden");
-});
-
-document.getElementById("backFromInventory").addEventListener("click", ()=>{
-    hideAllPages();
-    dashboard.classList.remove("hidden");
-});
-
-document.getElementById("backFromWorkshop").addEventListener("click", ()=>{
-    hideAllPages();
-    dashboard.classList.remove("hidden");
-});
+document.getElementById("backDashboard").addEventListener("click", goBackToDashboard);
+document.getElementById("backFromClients").addEventListener("click", goBackToDashboard);
+document.getElementById("backFromInventory").addEventListener("click", goBackToDashboard);
+document.getElementById("backFromWorkshop").addEventListener("click", goBackToDashboard);
 
 /* =========================
    VEHICLE MODAL
@@ -1167,6 +1160,67 @@ closeWorkshopModal.addEventListener("click", ()=>{
     workshopModal.classList.add("hidden");
     editingTaskEl = null;
 });
+/* ── Toggle sección de piezas ── */
+document.getElementById("partsToggleBtn")?.addEventListener("click", ()=>{
+    const body  = document.getElementById("partsBody");
+    const arrow = document.getElementById("partsArrow");
+    body.classList.toggle("open");
+    arrow.classList.toggle("open");
+});
+
+/* ── Construir fila de pieza ── */
+function buildPartRow(){
+    const row = document.createElement("div");
+    row.className = "part-row";
+
+    let optionsHTML = `<option value="">Seleccionar del inventario</option>`;
+    document.querySelectorAll(".inventory-card").forEach(card => {
+        const name  = card.dataset.fullName || "";
+        const stock = parseInt(card.dataset.stock) || 0;
+        optionsHTML += `<option value="${name}">${name} (${stock} en stock)</option>`;
+    });
+    optionsHTML += `<option value="__manual__">✏️ Otra pieza...</option>`;
+
+    row.innerHTML = `
+        <select class="part-select">${optionsHTML}</select>
+        <input type="text" class="part-custom" placeholder="Nombre de pieza" style="display:none;flex:1;min-width:0;">
+        <input type="number" class="part-qty" value="1" min="1">
+        <button type="button" class="part-remove">✕</button>
+    `;
+
+    row.querySelector(".part-select").addEventListener("change", function(){
+        const custom = row.querySelector(".part-custom");
+        if(this.value === "__manual__"){
+            custom.style.display = "block";
+            this.style.width = "130px";
+            this.style.flex  = "0 0 auto";
+        } else {
+            custom.style.display = "none";
+            this.style.width = "";
+            this.style.flex  = "1";
+        }
+    });
+
+    row.querySelector(".part-remove").addEventListener("click", ()=> row.remove());
+    return row;
+}
+
+/* ── Agregar fila de pieza ── */
+document.getElementById("addPartBtn")?.addEventListener("click", ()=>{
+    document.getElementById("partsList").appendChild(buildPartRow());
+});
+
+/* ── Descontar stock de inventario ── */
+function deductInventoryStock(partName, qty){
+    if(!partName) return;
+    document.querySelectorAll(".inventory-card").forEach(card => {
+        if((card.dataset.fullName || "").toLowerCase() === partName.toLowerCase()){
+            const newStock = Math.max(0, (parseInt(card.dataset.stock) || 0) - qty);
+            card.dataset.stock = newStock;
+            refreshCardStock(card, newStock);
+        }
+    });
+}
 
 /* ── Guardar tarea ── */
 
@@ -1178,6 +1232,16 @@ saveWorkshopTaskBtn.addEventListener("click", ()=>{
     const vehicle         = selectedVehicle || manualVehicle;
     const delivery        = document.getElementById("taskDelivery").value;
     const status          = document.getElementById("taskStatus").value;
+
+    // Recopilar piezas del modal
+    const parts = [];
+    document.querySelectorAll("#partsList .part-row").forEach(row => {
+        const sel  = row.querySelector(".part-select");
+        const cust = row.querySelector(".part-custom");
+        const qty  = parseInt(row.querySelector(".part-qty").value) || 1;
+        const name = sel.value === "__manual__" ? cust.value.trim() : sel.value;
+        if(name) parts.push({ name, qty });
+    });
 
     if(!title || !vehicle){
         alert("Completa los datos");
@@ -1224,12 +1288,16 @@ saveWorkshopTaskBtn.addEventListener("click", ()=>{
         editingTaskEl = null;
 
     } else {
-        createWorkshopTask(title, vehicle, delivery, status);
+        parts.forEach(p => deductInventoryStock(p.name, p.qty));
+        createWorkshopTask(title, vehicle, delivery, status, parts);
     }
 
-    document.getElementById("taskTitle").value    = "";
+   document.getElementById("taskTitle").value    = "";
     document.getElementById("taskVehicle").value  = "";
     document.getElementById("taskDelivery").value = "";
+    document.getElementById("partsList").innerHTML = "";
+    document.getElementById("partsBody")?.classList.remove("open");
+    document.getElementById("partsArrow")?.classList.remove("open");
     workshopModal.classList.add("hidden");
 
     addNotification("task", "Taller", `Tarea "${title}" guardada`);
@@ -1239,7 +1307,7 @@ saveWorkshopTaskBtn.addEventListener("click", ()=>{
 
 /* ── Crear tarjeta de tarea ── */
 
-function createWorkshopTask(title, vehicle, delivery, status){
+function createWorkshopTask(title, vehicle, delivery, status, parts = []){
 
     const task = document.createElement("div");
     task.className        = "workshop-task";
@@ -1247,6 +1315,7 @@ function createWorkshopTask(title, vehicle, delivery, status){
     task.dataset.vehicle  = vehicle;
     task.dataset.delivery = delivery || "";
     task.dataset.status   = status;
+    task.dataset.parts    = JSON.stringify(parts);
 
     let displayDate = "Sin fecha";
     if(delivery){
@@ -1259,6 +1328,7 @@ function createWorkshopTask(title, vehicle, delivery, status){
             <strong>${title}</strong>
             <p>${vehicle}</p>
             <p>📅 Entrega: ${displayDate}</p>
+            ${parts.length > 0 ? `<div class="parts-saved-list">${parts.map(p => `<span class="part-saved-row">${p.name} × ${p.qty}</span>`).join("")}</div>` : ""}
         </div>
         <div class="task-actions">
             <select class="task-select">
@@ -2254,7 +2324,8 @@ function saveWorkshopTasks(){
             title:    task.dataset.title    || "",
             vehicle:  task.dataset.vehicle  || "",
             delivery: task.dataset.delivery || "",
-            status:   task.querySelector(".task-select")?.value || task.dataset.status || "En proceso"
+            status:   task.querySelector(".task-select")?.value || task.dataset.status || "En proceso",
+            parts:    JSON.parse(task.dataset.parts || "[]")
         });
     });
     DB.save("workshopTasks", data);
@@ -2315,7 +2386,7 @@ async function loadInventory(){
 
 async function loadWorkshopTasks(){
     const data = await DB.load("workshopTasks", []);
-    data.forEach(t => createWorkshopTask(t.title, t.vehicle, t.delivery, t.status));
+    data.forEach(t => createWorkshopTask(t.title, t.vehicle, t.delivery, t.status, t.parts || []));
 }
 
 /* ========================================
