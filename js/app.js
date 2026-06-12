@@ -28,7 +28,10 @@ function snakeToCamel(obj) {
    — swap DB.save/load por fetch() cuando
      conectes tu backend
 ======================================== */
-let _isLoading = false;
+let _isLoading     = false;
+let _currentUserId = null;
+let _notifData     = [];   // store persistente de notificaciones
+let _activityData  = [];   // store persistente de actividad
 
 /* ── TOAST DE GUARDADO ── */
 let _saveCount = 0;
@@ -242,6 +245,7 @@ loginForm.addEventListener("submit", async (e) => {
     btn.textContent = "Ingresar";
     btn.disabled    = false;
 } else {
+        _currentUserId = data.user?.id || null;
         document.querySelector(".login-page").style.display = "none";
         dashboard.classList.remove("hidden");
 
@@ -289,6 +293,42 @@ function hideAllPages(){
     inventoryPage.classList.add("hidden");
     workshopPage.classList.add("hidden");
 }
+
+/* =========================
+   DASHBOARD HEADER DINÁMICO
+========================= */
+function updateDashboardHeader(){
+    const greetEl = document.getElementById("dashGreeting");
+    const dateEl  = document.getElementById("dashDate");
+    const userEl  = document.getElementById("dashUser");
+
+    if(greetEl) greetEl.textContent = "Excelente día";
+
+    if(dateEl){
+        const today = new Date();
+        const opts  = { weekday:"long", year:"numeric", month:"long", day:"numeric" };
+        const str   = today.toLocaleDateString("es-MX", opts);
+        dateEl.textContent = str.charAt(0).toUpperCase() + str.slice(1);
+    }
+
+    if(userEl){
+        _supabase.auth.getSession().then(({ data: { session } }) => {
+            if(session?.user?.email) userEl.textContent = session.user.email;
+        });
+    }
+}
+
+/* "Ver todos" del dashboard → navegan a la sección */
+document.getElementById("dashGoVehicles")?.addEventListener("click", ()=>{
+    dashboard.classList.add("hidden");
+    vehiclesPage.classList.remove("hidden");
+    setActiveNav(0);
+});
+document.getElementById("dashGoInventory")?.addEventListener("click", ()=>{
+    dashboard.classList.add("hidden");
+    inventoryPage.classList.remove("hidden");
+    setActiveNav(2);
+});
 /* =========================
    EMPTY STATES
 ========================= */
@@ -1435,6 +1475,11 @@ function updateDashboardStats(){
         ? Array.from(serviceList.children).filter(c => !c.classList.contains("empty-state")).length
         : 0;
 
+    const readyListEl = document.getElementById("readyList");
+    const readyCars   = readyListEl
+        ? Array.from(readyListEl.children).filter(c => !c.classList.contains("empty-state")).length
+        : 0;
+
     let pending = 0;
     document.querySelectorAll(".workshop-task").forEach(task => {
         if(task.querySelector(".task-select")?.value === "Pendiente") pending++;
@@ -1444,21 +1489,28 @@ function updateDashboardStats(){
     const totalClients = document.querySelectorAll(".cp-card").length;
 
     const el = {
-        cars:    document.getElementById("dashActiveCars"),
-        tasks:   document.getElementById("dashPendingTasks"),
-        stock:   document.getElementById("dashLowStock"),
-        clients: document.getElementById("dashClients"),
-        card:    document.getElementById("dashLowStockCard")
+        cars:      document.getElementById("dashActiveCars"),
+        tasks:     document.getElementById("dashPendingTasks"),
+        stock:     document.getElementById("dashLowStock"),
+        clients:   document.getElementById("dashClients"),
+        card:      document.getElementById("dashLowStockCard"),
+        ready:     document.getElementById("dashReadyCars"),
+        readyCard: document.getElementById("dashReadyCard")
     };
 
     if(el.cars)    el.cars.textContent    = activeCars;
     if(el.tasks)   el.tasks.textContent   = pending;
     if(el.stock)   el.stock.textContent   = lowStock;
     if(el.clients) el.clients.textContent = totalClients;
+    if(el.ready)   el.ready.textContent   = readyCars;
 
     if(el.card){
         if(lowStock > 0) el.card.classList.add("dash-stat-alert");
         else             el.card.classList.remove("dash-stat-alert");
+    }
+    if(el.readyCard){
+        if(readyCars > 0) el.readyCard.classList.add("dash-ready-active");
+        else              el.readyCard.classList.remove("dash-ready-active");
     }
 }
 function updateWorkshopStats(){
@@ -1877,6 +1929,26 @@ function updateInventoryStats(){
     updateDashboardStats();
 }
 
+/* ── Limpiar lista de Entregados ── */
+document.getElementById("clearDoneList")?.addEventListener("click", ()=>{
+    const list  = document.getElementById("doneList");
+    const count = Array.from(list.children).filter(c => !c.classList.contains("empty-state")).length;
+    if(count === 0) return;
+    if(!confirm(`¿Limpiar ${count} vehículo${count > 1 ? "s" : ""} entregado${count > 1 ? "s" : ""}?\nEsta acción no se puede deshacer.`)) return;
+    list.innerHTML = "";
+    checkEmptyState("doneList");
+    updateCounts();
+    saveVehicles();
+});
+
+/* ── Ordenar inventario por stock ── */
+document.getElementById("sortInventoryBtn")?.addEventListener("click", ()=>{
+    const list  = document.getElementById("inventoryList");
+    const cards = Array.from(list.querySelectorAll(".inventory-card"));
+    if(cards.length === 0) return;
+    cards.sort((a, b) => (parseInt(a.dataset.stock) || 0) - (parseInt(b.dataset.stock) || 0));
+    cards.forEach(card => list.appendChild(card));
+});
 const _invSearch = document.getElementById("inventorySearch");
 if(_invSearch){
     _invSearch.addEventListener("input", (e)=>{
@@ -1924,6 +1996,7 @@ const MAX_NOTIF    = 3;
 const MAX_ACTIVITY = 4;
 
 function addNotification(iconKey, title, message){
+    if(_isLoading) return; // no duplicar al cargar datos
     const container = document.querySelector(".notifications-container");
     if(!container) return;
     const card = document.createElement("div");
@@ -1937,6 +2010,12 @@ function addNotification(iconKey, title, message){
     refreshNotifVisibility();
     if("Notification" in window && Notification.permission === "granted"){
         new Notification("🔔 " + title + " — Taller App", { body: message });
+    }
+    // ── Persistir en localStorage ──
+    if(_currentUserId){
+        _notifData.unshift({ iconKey, title, message });
+        if(_notifData.length > 20) _notifData = _notifData.slice(0, 20);
+        localStorage.setItem(`taller_notifs_${_currentUserId}`, JSON.stringify(_notifData));
     }
 }
 
@@ -1960,6 +2039,7 @@ document.querySelector(".see-all")?.addEventListener("click", ()=>{
 });
 
 function addActivity(iconKey, title, subtitle){
+    if(_isLoading) return; // no duplicar al cargar datos
     const list = document.querySelector(".activity-list");
     if(!list) return;
     const ts   = Date.now();
@@ -1976,6 +2056,12 @@ function addActivity(iconKey, title, subtitle){
     `;
     list.prepend(item);
     refreshActivityVisibility();
+    // ── Persistir en localStorage ──
+    if(_currentUserId){
+        _activityData.unshift({ iconKey, title, subtitle, time: ts });
+        if(_activityData.length > 20) _activityData = _activityData.slice(0, 20);
+        localStorage.setItem(`taller_activity_${_currentUserId}`, JSON.stringify(_activityData));
+    }
 }
 
 function refreshActivityVisibility(){
@@ -2018,6 +2104,68 @@ setInterval(()=>{
         if(t) t.textContent = getTimeAgo(parseInt(item.dataset.time));
     });
 }, 30000);
+
+/* ========================================
+   CARGAR NOTIFICACIONES PERSISTIDAS
+======================================== */
+function loadPersistedNotifications(userId){
+    const stored = JSON.parse(localStorage.getItem(`taller_notifs_${userId}`) || "[]");
+    _notifData   = stored;
+    const container = document.querySelector(".notifications-container");
+    if(!container || stored.length === 0) return;
+    stored.forEach(n => {
+        const card = document.createElement("div");
+        card.className = "notification-card";
+        card.innerHTML = `
+            <div class="card-icon-minimal">${APP_ICONS[n.iconKey] || APP_ICONS.vehicle}</div>
+            <h3>${n.title}</h3>
+            <p>${n.message}</p>
+        `;
+        container.appendChild(card);
+    });
+    refreshNotifVisibility();
+}
+
+function loadPersistedActivity(userId){
+    const stored  = JSON.parse(localStorage.getItem(`taller_activity_${userId}`) || "[]");
+    _activityData = stored;
+    const list = document.querySelector(".activity-list");
+    if(!list || stored.length === 0) return;
+    stored.forEach(a => {
+        const item = document.createElement("div");
+        item.className    = "activity-item grouped-item";
+        item.dataset.time = a.time;
+        item.innerHTML = `
+            <div class="activity-icon-minimal">${APP_ICONS[a.iconKey] || APP_ICONS.vehicle}</div>
+            <div class="info">
+                <p class="title">${a.title}</p>
+                <p class="subtitle">${a.subtitle}</p>
+            </div>
+            <span class="time grouped-time">${getTimeAgo(a.time)}</span>
+        `;
+        list.appendChild(item);
+    });
+    refreshActivityVisibility();
+}
+
+/* ========================================
+   BUSCADOR DE VEHÍCULOS — BITÁCORA
+======================================== */
+const _vpSearch = document.getElementById("vehicleSearch");
+if(_vpSearch){
+    _vpSearch.addEventListener("input", (e)=>{
+        const query = e.target.value.toLowerCase().trim();
+        document.querySelectorAll(".vp-card").forEach(card =>{
+            const text = [
+                card.dataset.vehicleName || "",
+                card.dataset.plate       || "",
+                card.dataset.owner       || "",
+                card.dataset.color       || ""
+            ].join(" ").toLowerCase();
+            card.style.display = text.includes(query) ? "" : "none";
+        });
+    });
+}
 
 /* ========================================
    BANNER: TRABAJO COMPLETADO
@@ -2237,6 +2385,9 @@ if(clientSearchInput){
 ========================= */
 document.getElementById("logoutBtn")?.addEventListener("click", async ()=>{
     if(!confirm("¿Cerrar sesión?")) return;
+    _notifData     = [];
+    _activityData  = [];
+    _currentUserId = null;
     await _supabase.auth.signOut();
     limpiarDOM();
     hideAllPages();
@@ -2418,18 +2569,25 @@ function limpiarDOM(){
 async function inicializarEstructurasDeUsuario() {
     _isLoading = true;
     limpiarDOM();
-    
+    updateDashboardHeader();
+
     // Ejecuta las descargas una tras otra esperando que terminen
     await loadVehicles();
     await loadClients();
     await loadInventory();
     await loadWorkshopTasks();
-    
+
     _isLoading = false;
     initEmptyStates();
     updateDashboardStats();
     updateDashVehicles();
     updateDashLowStock();
+
+    // Restaurar notificaciones y actividad desde localStorage
+    if(_currentUserId){
+        loadPersistedNotifications(_currentUserId);
+        loadPersistedActivity(_currentUserId);
+    }
 }
 
 /* ========================================
@@ -2441,6 +2599,7 @@ async function inicializarEstructurasDeUsuario() {
         if (error) throw error;
 
         if (session) {
+            _currentUserId = session.user.id;
             document.querySelector(".login-page").style.display = "none";
             dashboard.classList.remove("hidden");
             await inicializarEstructurasDeUsuario();

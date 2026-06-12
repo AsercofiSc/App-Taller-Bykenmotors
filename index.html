@@ -198,8 +198,9 @@
     
     <div class="top-header">
     <span class="powered-text">Powered by Lumina</span>
-    <h1>Bienvenido A Tu Taller</h1>
-    <p>Panel principal del taller</p>
+    <h1 id="dashGreeting">Excelente día</h1>
+    <p id="dashDate">Panel principal del taller</p>
+    <span id="dashUser" style="display:block;font-size:.75rem;color:rgba(0,0,0,.45);font-weight:500;margin-top:2px;"></span>
     <button id="logoutBtn" style="
         margin-top:10px;
         padding:8px 20px;
@@ -254,6 +255,16 @@
         </div>
         <div class="dash-stat-icon dash-icon-purple">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        </div>
+    </div>
+    <div class="dash-stat-card dash-stat-ready" id="dashReadyCard">
+        <div class="dash-stat-info">
+            <span class="dash-stat-label">Listos para entrega</span>
+            <strong id="dashReadyCars">0</strong>
+            <span class="dash-stat-sub">vehículos esperando al cliente</span>
+        </div>
+        <div class="dash-stat-icon dash-icon-green">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><polyline points="20 6 9 17 4 12"/></svg>
         </div>
     </div>
 </div>
@@ -403,6 +414,10 @@
     </div>
 </div>
 
+    <!-- BUSCADOR -->
+    <div class="vp-search">
+        <input type="text" id="vehicleSearch" placeholder="🔍 Buscar vehículo, placa o dueño...">
+    </div>
     <!-- LISTAS -->
     <div class="vp-sections">
 
@@ -445,7 +460,12 @@
                     <div class="vp-dot purple-dot"></div>
                     <h2>Entregados</h2>
                 </div>
-                <button class="add-btn vp-add" data-target="doneList">+</button>
+                <div style="display:flex;gap:8px;align-items:center;">
+                    <button class="vp-clear-btn" id="clearDoneList" title="Limpiar entregados">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+                    </button>
+                    <button class="add-btn vp-add" data-target="doneList">+</button>
+                </div>
             </div>
             <div id="doneList" class="vp-list"></div>
         </div>
@@ -561,13 +581,15 @@
     <!-- SEARCH -->
 
     <div class="inventory-search">
-
         <input
             type="text"
             id="inventorySearch"
             placeholder="Buscar producto..."
         >
-
+        <button id="sortInventoryBtn" class="inv-sort-btn" title="Ordenar por stock de menor a mayor">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>
+            Stock
+        </button>
     </div>
 
     <!-- LIST -->

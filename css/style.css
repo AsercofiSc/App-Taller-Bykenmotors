@@ -3362,6 +3362,32 @@ background-image: url('../assets/img/fondo-menu.png');
     margin-bottom: 20px;
 }
 
+/* ========================================
+   BUSCADOR — BITÁCORA
+======================================== */
+.vp-search{
+    padding: 0 20px 16px;
+}
+
+.vp-search input{
+    width: 100%;
+    height: 50px;
+    border-radius: 16px;
+    background: rgba(255,255,255,.60);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,.55);
+    padding: 0 18px;
+    font-size: .9rem;
+    font-family: 'Inter', sans-serif;
+    color: #111;
+    outline: none;
+    box-shadow: 0 4px 14px rgba(0,0,0,.05);
+    transition: border-color .2s;
+}
+
+.vp-search input:focus{
+    border-color: rgba(255,149,0,.35);
+}
 .cp-search{
     margin-bottom: 20px;
 }
@@ -5004,6 +5030,76 @@ background-image: url('../assets/img/fondo-menu.png');
 .dash-icon-orange { background: rgba(255,149,0,.12);   color: #ff9500;  }
 .dash-icon-red    { background: rgba(255,59,48,.12);   color: #ff3b30;  }
 .dash-icon-purple { background: rgba(175,82,222,.12);  color: #af52de;  }
+.dash-icon-green  { background: rgba(52,199,89,.12);   color: #34c759;  }
+
+/* Tarjeta "Listos para entrega" — ocupa todo el ancho */
+.dash-stat-ready {
+    grid-column: 1 / -1;
+    background: rgba(52,199,89,.06);
+    border-color: rgba(52,199,89,.18);
+}
+.dash-stat-ready strong {
+    color: #34c759;
+}
+.dash-ready-active {
+    background: rgba(52,199,89,.12) !important;
+    border-color: rgba(52,199,89,.30) !important;
+    box-shadow: 0 6px 24px rgba(52,199,89,.12) !important;
+}
+
+/* Botón limpiar entregados */
+.vp-clear-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+    background: rgba(255,59,48,.08);
+    border: 1px solid rgba(255,59,48,.15);
+    color: #ff3b30;
+    cursor: pointer;
+    transition: background .2s;
+    flex-shrink: 0;
+}
+.vp-clear-btn:hover {
+    background: rgba(255,59,48,.15);
+}
+
+/* Botón ordenar inventario */
+.inventory-search {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 22px;
+}
+.inventory-search input {
+    flex: 1;
+    min-width: 0;
+}
+.inv-sort-btn {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex-shrink: 0;
+    height: 46px;
+    padding: 0 14px;
+    border-radius: 14px;
+    background: rgba(255,255,255,.75);
+    border: 1px solid rgba(255,255,255,.5);
+    backdrop-filter: blur(20px);
+    font-size: .8rem;
+    font-weight: 600;
+    color: #555;
+    cursor: pointer;
+    box-shadow: 0 6px 20px rgba(0,0,0,.04);
+    transition: background .2s;
+    font-family: 'Inter', sans-serif;
+}
+.inv-sort-btn:hover {
+    background: rgba(255,255,255,.95);
+    color: #ff9500;
+}
 
 /* ========================================
    VEHÍCULOS EN PROCESO — DASHBOARD
