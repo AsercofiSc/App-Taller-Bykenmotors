@@ -2613,3 +2613,26 @@ async function inicializarEstructurasDeUsuario() {
         _tryHideLoader();
     }
 })();
+// --- CONFIGURACIÓN DE NOTIFICACIONES ---
+window.OneSignal = window.OneSignal || [];
+OneSignal.push(function() {
+    OneSignal.init({
+        // AQUÍ ES DONDE DEBES PONER TU ID REAL. 
+        // Ejemplo: "a1b2c3d4-e5f6-7890-g1h2-i3j4k5l6m7n8"
+        appId: "5cd9a6bc-bfc4-4253-94a5-3f68a82ef53a", 
+        allowLocalhostAsSecureOrigin: true
+    });
+});
+
+// --- EL "MENSAJERO" ---
+function avisar(mensaje) {
+    if (window.OneSignal) {
+        OneSignal.push(function() {
+            OneSignal.sendSelfHostedNotification({
+                heading: "Taller App",
+                contents: { en: mensaje }
+            });
+        });
+    }
+}
+
