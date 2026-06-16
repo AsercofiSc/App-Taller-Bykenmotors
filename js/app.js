@@ -68,7 +68,9 @@ const DB = {
             vehicles: "vehicles",
             clients: "clients",
             inventory: "inventory",
-            workshopTasks: "workshop_tasks"
+            workshopTasks: "workshop_tasks",
+            suppliers: "suppliers",
+            technicians: "technicians"
         };
         return map[key] || key;
     },
@@ -251,6 +253,7 @@ loginForm.addEventListener("submit", async (e) => {
 
         // NUEVO: Descarga la información de Supabase cuando el usuario inicia sesión
         await inicializarEstructurasDeUsuario();
+        solicitarPermisoNotificaciones();
     }
 });
 /* =========================
@@ -292,6 +295,12 @@ function hideAllPages(){
     clientsPage.classList.add("hidden");
     inventoryPage.classList.add("hidden");
     workshopPage.classList.add("hidden");
+    document.getElementById("comprasPage")?.classList.add("hidden");
+    document.getElementById("proveedoresPage")?.classList.add("hidden");
+    document.getElementById("ordenesCompraPage")?.classList.add("hidden");
+    document.getElementById("recepcionesPage")?.classList.add("hidden");
+    document.getElementById("facturasPage")?.classList.add("hidden");
+    document.getElementById("tecnicosPage")?.classList.add("hidden");
 }
 
 /* =========================
@@ -766,6 +775,7 @@ function createVehicleCard(name, target, year, plate, color, owner, date, status
             autoAddWorkshopTask(name);
             addNotification("vehicle", "En servicio", `${name} pasó a servicio`);
             addActivity("vehicle", "Vehículo a servicio", name);
+            avisar(`🔧 ${name} entró a servicio`);
         });
         card.querySelector(".vp-card-right").prepend(moveBtn);
     }
@@ -1190,6 +1200,8 @@ addWorkshopTaskBtn.addEventListener("click", ()=>{
     taskStatusBtn.classList.remove("pending-status","completed-status");
     taskStatusBtn.classList.add("active-status");
 
+    refreshTechnicianSelect();
+    document.getElementById("taskTechnicianSelect").value = "";
     editingTaskEl = null;
     workshopModal.classList.remove("hidden");
 });
@@ -1272,7 +1284,7 @@ saveWorkshopTaskBtn.addEventListener("click", ()=>{
     const vehicle         = selectedVehicle || manualVehicle;
     const delivery        = document.getElementById("taskDelivery").value;
     const status          = document.getElementById("taskStatus").value;
-
+    const technicianName  = document.getElementById("taskTechnicianSelect")?.value || "";
     // Recopilar piezas del modal
     const parts = [];
     document.querySelectorAll("#partsList .part-row").forEach(row => {
@@ -1329,9 +1341,8 @@ saveWorkshopTaskBtn.addEventListener("click", ()=>{
 
     } else {
         parts.forEach(p => deductInventoryStock(p.name, p.qty));
-        createWorkshopTask(title, vehicle, delivery, status, parts);
+        createWorkshopTask(title, vehicle, delivery, status, parts, technicianName);
     }
-
    document.getElementById("taskTitle").value    = "";
     document.getElementById("taskVehicle").value  = "";
     document.getElementById("taskDelivery").value = "";
@@ -1347,15 +1358,15 @@ saveWorkshopTaskBtn.addEventListener("click", ()=>{
 
 /* ── Crear tarjeta de tarea ── */
 
-function createWorkshopTask(title, vehicle, delivery, status, parts = []){
-
+function createWorkshopTask(title, vehicle, delivery, status, parts = [], technicianName = ""){
     const task = document.createElement("div");
     task.className        = "workshop-task";
     task.dataset.title    = title;
     task.dataset.vehicle  = vehicle;
     task.dataset.delivery = delivery || "";
     task.dataset.status   = status;
-    task.dataset.parts    = JSON.stringify(parts);
+    task.dataset.parts          = JSON.stringify(parts);
+    task.dataset.technicianName = technicianName;
 
     let displayDate = "Sin fecha";
     if(delivery){
@@ -1368,6 +1379,7 @@ function createWorkshopTask(title, vehicle, delivery, status, parts = []){
             <strong>${title}</strong>
             <p>${vehicle}</p>
             <p>📅 Entrega: ${displayDate}</p>
+            ${technicianName ? `<p style="font-size:.78rem;color:#f5820d;font-weight:600;">👨‍🔧 ${technicianName}</p>` : ""}
             ${parts.length > 0 ? `<div class="parts-saved-list">${parts.map(p => `<span class="part-saved-row">${p.name} × ${p.qty}</span>`).join("")}</div>` : ""}
         </div>
         <div class="task-actions">
@@ -1394,6 +1406,7 @@ function createWorkshopTask(title, vehicle, delivery, status, parts = []){
         syncVehicleToReady(task.dataset.vehicle, task.dataset.title);
         addNotification("task", "✅ Completado", `${task.dataset.title} — ${task.dataset.vehicle}`);
         addActivity("task", "Trabajo completado", `${task.dataset.title} · ${task.dataset.vehicle}`);
+        avisar(`✅ Trabajo listo: ${task.dataset.title} — ${task.dataset.vehicle}`);
         showCompletedBanner(task.dataset.title, task.dataset.vehicle);
         task.style.transition = "opacity .6s ease, transform .6s ease";
         task.style.background = "rgba(52,199,89,.12)";
@@ -1413,6 +1426,8 @@ function createWorkshopTask(title, vehicle, delivery, status, parts = []){
         document.getElementById("taskDelivery").value = task.dataset.delivery;
         loadWorkshopVehicles();
         document.getElementById("taskVehicleSelect").value = task.dataset.vehicle;
+        refreshTechnicianSelect();
+        document.getElementById("taskTechnicianSelect").value = task.dataset.technicianName || "";
 
         const s = task.dataset.status;
         taskStatusInput.value = s;
@@ -1514,7 +1529,7 @@ function updateDashboardStats(){
     }
 }
 function updateWorkshopStats(){
-    const tasks       = document.querySelectorAll(".workshop-task");
+    const tasks       = document.querySelectorAll("#workshopTasks .workshop-task");
     const serviceList = document.getElementById("serviceList");
     const activeVehicles = serviceList
         ? Array.from(serviceList.children).filter(c => !c.classList.contains("empty-state")).length
@@ -1525,8 +1540,7 @@ function updateWorkshopStats(){
 
     let pending = 0;
     tasks.forEach(task => {
-        if(task.querySelector(".task-select").value === "Pendiente") pending++;
-    });
+    if(task.querySelector(".task-select")?.value === "Pendiente") pending++;    });
 
     const pendingJobs = document.getElementById("pendingJobs");
     if(pendingJobs) pendingJobs.textContent = pending;
@@ -1812,12 +1826,14 @@ function refreshCardStock(card, stock){
         showAlertBanner(name, stock, alertEmail);
         addNotification("inventory", "⚠️ Stock bajo", `${name} — solo ${stock} uds`);
         addActivity("inventory", "Alerta de stock bajo", `${name} · ${stock} unidades`);
+        avisar(`⚠️ Stock bajo: ${name} — solo ${stock} unidades`);
     }
     if(stock === 0){
         showAlertBanner(`${name} — SIN STOCK`, 0, alertEmail);
         fireNotification(`${name} — SIN STOCK`, 0);
         addNotification("inventory", "🚨 Sin stock", `${name} — agotado`);
         addActivity("inventory", "Producto agotado", name);
+        avisar(`🚨 SIN STOCK: ${name} — agotado`);
     }
 
     updateInventoryStats();
@@ -2266,6 +2282,7 @@ function syncVehicleToReady(vehicleName, taskTitle){
             sendVehicleReadyEmail(ownerCard.dataset.email, card.dataset.owner, card.dataset.vehicleName||"");
         }
 
+        avisar(`✅ ${card.dataset.vehicleName || vehicleName} está listo para entrega`);
         updateCounts();
         refreshClientVehicleStatuses();
     });
@@ -2296,7 +2313,9 @@ function addDeliverButton(card){
 
         btn.remove();
         document.getElementById("doneList").appendChild(card);
-        updateCounts();
+        addNotification("vehicle", "Entregado", `${vName} entregado al cliente`);
+        addActivity("vehicle", "Vehículo entregado", vName);
+        avisar(`🏁 ${vName} fue entregado al cliente`);
         refreshClientVehicleStatuses();
 
         // Email al cliente: vehículo entregado
@@ -2470,13 +2489,14 @@ function saveInventory(){
 function saveWorkshopTasks(){
     if(_isLoading) return;
     const data = [];
-    document.querySelectorAll(".workshop-task").forEach(task => {
+    document.querySelectorAll("#workshopTasks .workshop-task").forEach(task => {
         data.push({
             title:    task.dataset.title    || "",
             vehicle:  task.dataset.vehicle  || "",
             delivery: task.dataset.delivery || "",
             status:   task.querySelector(".task-select")?.value || task.dataset.status || "En proceso",
-            parts:    JSON.parse(task.dataset.parts || "[]")
+            parts:          JSON.parse(task.dataset.parts || "[]"),
+            technicianName: task.dataset.technicianName || ""
         });
     });
     DB.save("workshopTasks", data);
@@ -2537,7 +2557,7 @@ async function loadInventory(){
 
 async function loadWorkshopTasks(){
     const data = await DB.load("workshopTasks", []);
-    data.forEach(t => createWorkshopTask(t.title, t.vehicle, t.delivery, t.status, t.parts || []));
+    data.forEach(t => createWorkshopTask(t.title, t.vehicle, t.delivery, t.status, t.parts || [], t.technicianName || ""));
 }
 
 /* ========================================
@@ -2547,8 +2567,9 @@ function limpiarDOM(){
     [
         "incomingList","serviceList","readyList","doneList",
         "clientsList","serviceClientsList","externalClientsList",
-        "inventoryList","workshopTasks",
-        "dashVehiclesList","dashLowStockList"
+       "inventoryList","workshopTasks",
+        "dashVehiclesList","dashLowStockList",
+        "suppliersList","ordenesList","recepcionesList","facturasList","techniciansList"
     ].forEach(id => {
         const el = document.getElementById(id);
         if(el) el.innerHTML = "";
@@ -2576,6 +2597,11 @@ async function inicializarEstructurasDeUsuario() {
     await loadClients();
     await loadInventory();
     await loadWorkshopTasks();
+    await loadSuppliers();
+    await loadTechnicians();
+    await loadPurchaseOrders();
+    await loadRecepciones();
+    await loadInvoices();
 
     _isLoading = false;
     initEmptyStates();
@@ -2603,6 +2629,7 @@ async function inicializarEstructurasDeUsuario() {
             document.querySelector(".login-page").style.display = "none";
             dashboard.classList.remove("hidden");
             await inicializarEstructurasDeUsuario();
+            solicitarPermisoNotificaciones();
         }
         // Marcar datos como listos (con o sin sesión)
         window._loaderDataDone = true;
@@ -2613,26 +2640,1260 @@ async function inicializarEstructurasDeUsuario() {
         _tryHideLoader();
     }
 })();
-// --- CONFIGURACIÓN DE NOTIFICACIONES ---
-window.OneSignal = window.OneSignal || [];
-OneSignal.push(function() {
-    OneSignal.init({
-        // AQUÍ ES DONDE DEBES PONER TU ID REAL. 
-        // Ejemplo: "a1b2c3d4-e5f6-7890-g1h2-i3j4k5l6m7n8"
-        appId: "5cd9a6bc-bfc4-4253-94a5-3f68a82ef53a", 
-        allowLocalhostAsSecureOrigin: true
+// =============================================
+//   NOTIFICACIONES PUSH — Web Push Nativo
+//   Sin dependencias externas. Cada usuario
+//   recibe solo sus propias notificaciones.
+// =============================================
+
+const VAPID_PUBLIC_KEY = "BMmTWPbMjETUOYEdoRtPc7VvPohAPY352ji1CK8ueibNRnXmjgeq65PIcUWfNkb9IYS6mGGcwQ9HB5VC_E1NXCM";
+
+function urlBase64ToUint8Array(base64String) {
+    const padding = "=".repeat((4 - base64String.length % 4) % 4);
+    const base64  = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+    const rawData = atob(base64);
+    return Uint8Array.from([...rawData].map(c => c.charCodeAt(0)));
+}
+
+// Pide permiso al usuario y guarda la suscripción en Supabase
+async function solicitarPermisoNotificaciones() {
+    if (!("serviceWorker" in navigator) || !("PushManager" in window)) return;
+    try {
+        const permission = await Notification.requestPermission();
+        if (permission !== "granted") return;
+
+        const registration = await navigator.serviceWorker.ready;
+
+        let subscription = await registration.pushManager.getSubscription();
+        if (!subscription) {
+            subscription = await registration.pushManager.subscribe({
+                userVisibleOnly:      true,
+                applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+            });
+        }
+
+        const { data: { session } } = await _supabase.auth.getSession();
+        if (!session) return;
+
+        await _supabase.from("push_subscriptions").upsert({
+            user_id:      session.user.id,
+            endpoint:     subscription.endpoint,
+            subscription: subscription.toJSON()
+        }, { onConflict: "user_id,endpoint" });
+
+        console.log("✅ Notificaciones push activadas");
+    } catch(e) {
+        console.error("Error al activar notificaciones:", e);
+    }
+}
+
+// Envía notificación push al usuario actual vía Netlify Function
+async function avisar(mensaje, titulo = "Taller App") {
+    try {
+        const { data: { session } } = await _supabase.auth.getSession();
+        if (!session) return;
+
+        await fetch("/.netlify/functions/send-notification", {
+            method:  "POST",
+            headers: { "Content-Type": "application/json" },
+            body:    JSON.stringify({
+                userId: session.user.id,
+                title:  titulo,
+                body:   mensaje
+            })
+        });
+    } catch(e) {
+        console.error("[Taller] Error al enviar notificación:", e);
+    }
+}
+
+/* ========================================
+   MÓDULO: TÉCNICOS
+======================================== */
+
+let _editingTechnicianCard = null;
+
+const technicianModal      = document.getElementById("technicianModal");
+const closeTechnicianModal = document.getElementById("closeTechnicianModal");
+const saveTechnicianBtn    = document.getElementById("saveTechnicianBtn");
+
+document.getElementById("addTechnicianBtn")?.addEventListener("click", () => {
+    _editingTechnicianCard = null;
+    document.querySelector("#technicianModal h2").textContent = "Nuevo técnico";
+    document.getElementById("technicianName").value      = "";
+    document.getElementById("technicianPhone").value     = "";
+    document.getElementById("technicianEmail").value     = "";
+    document.getElementById("technicianSpecialty").value = "";
+    document.getElementById("technicianNotes").value     = "";
+    technicianModal.classList.remove("hidden");
+});
+
+closeTechnicianModal?.addEventListener("click", () => {
+    technicianModal.classList.add("hidden");
+    _editingTechnicianCard = null;
+});
+
+saveTechnicianBtn?.addEventListener("click", () => {
+    const name      = document.getElementById("technicianName").value.trim();
+    const phone     = document.getElementById("technicianPhone").value.trim();
+    const email     = document.getElementById("technicianEmail").value.trim();
+    const specialty = document.getElementById("technicianSpecialty").value.trim();
+    const notes     = document.getElementById("technicianNotes").value.trim();
+
+    if (!name) { alert("Ingresa el nombre del técnico"); return; }
+
+    if (_editingTechnicianCard) {
+        const card = _editingTechnicianCard;
+        card.dataset.name      = name;
+        card.dataset.phone     = phone;
+        card.dataset.email     = email;
+        card.dataset.specialty = specialty;
+        card.dataset.notes     = notes;
+        card.querySelector(".tech-name").textContent      = name;
+        card.querySelector(".tech-specialty").textContent = specialty || "Sin especialidad";
+        if (card.querySelector(".tech-phone"))
+            card.querySelector(".tech-phone").textContent = phone ? `📞 ${phone}` : "";
+        _editingTechnicianCard = null;
+        document.querySelector("#technicianModal h2").textContent = "Nuevo técnico";
+    } else {
+        createTechnicianCard(name, phone, email, specialty, notes);
+    }
+
+    document.getElementById("technicianName").value      = "";
+    document.getElementById("technicianPhone").value     = "";
+    document.getElementById("technicianEmail").value     = "";
+    document.getElementById("technicianSpecialty").value = "";
+    document.getElementById("technicianNotes").value     = "";
+    technicianModal.classList.add("hidden");
+    saveTechnicians();
+});
+
+function createTechnicianCard(name, phone, email, specialty, notes) {
+    const list = document.getElementById("techniciansList");
+    if (!list) return;
+
+    const card = document.createElement("div");
+    card.className        = "workshop-task";
+    card.dataset.name      = name;
+    card.dataset.phone     = phone     || "";
+    card.dataset.email     = email     || "";
+    card.dataset.specialty = specialty || "";
+    card.dataset.notes     = notes     || "";
+
+    card.innerHTML = `
+        <div>
+            <strong class="tech-name">${name}</strong>
+            <p class="tech-specialty">🔧 ${specialty || "Sin especialidad"}</p>
+            ${phone ? `<p class="tech-phone">📞 ${phone}</p>` : ""}
+            ${email ? `<p>✉️ ${email}</p>` : ""}
+            ${notes ? `<p style="font-size:.75rem;color:#888">${notes}</p>` : ""}
+        </div>
+        <div class="task-actions">
+            <button class="tech-edit-btn" title="Editar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                </svg>
+            </button>
+            <button class="tech-delete-btn" title="Eliminar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="12" height="12">
+                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+            </button>
+        </div>
+    `;
+
+    card.querySelector(".tech-edit-btn").addEventListener("click", () => {
+        _editingTechnicianCard = card;
+        document.querySelector("#technicianModal h2").textContent = "Editar técnico";
+        document.getElementById("technicianName").value      = card.dataset.name;
+        document.getElementById("technicianPhone").value     = card.dataset.phone;
+        document.getElementById("technicianEmail").value     = card.dataset.email;
+        document.getElementById("technicianSpecialty").value = card.dataset.specialty;
+        document.getElementById("technicianNotes").value     = card.dataset.notes;
+        technicianModal.classList.remove("hidden");
+    });
+
+    card.querySelector(".tech-delete-btn").addEventListener("click", () => {
+        if (!confirm(`¿Eliminar a ${name}?`)) return;
+        card.remove();
+        checkEmptyState("techniciansList");
+        saveTechnicians();
+    });
+
+    list.appendChild(card);
+    checkEmptyState("techniciansList");
+}
+
+function saveTechnicians() {
+    if (_isLoading) return;
+    const data = [];
+    document.querySelectorAll("#techniciansList .workshop-task").forEach(card => {
+        data.push({
+            name:      card.dataset.name      || "",
+            phone:     card.dataset.phone     || "",
+            email:     card.dataset.email     || "",
+            specialty: card.dataset.specialty || "",
+            notes:     card.dataset.notes     || ""
+        });
+    });
+    DB.save("technicians", data);
+}
+
+async function loadTechnicians() {
+    const data = await DB.load("technicians", []);
+    data.forEach(t => createTechnicianCard(t.name, t.phone, t.email, t.specialty, t.notes));
+}
+
+/* ========================================
+   MÓDULO: PROVEEDORES
+======================================== */
+
+let _editingSupplierCard = null;
+
+const supplierModal      = document.getElementById("supplierModal");
+const closeSupplierModal = document.getElementById("closeSupplierModal");
+const saveSupplierBtn    = document.getElementById("saveSupplierBtn");
+
+document.getElementById("addSupplierBtn")?.addEventListener("click", () => {
+    _editingSupplierCard = null;
+    document.querySelector("#supplierModal h2").textContent = "Nuevo proveedor";
+    document.getElementById("supplierName").value    = "";
+    document.getElementById("supplierContact").value = "";
+    document.getElementById("supplierPhone").value   = "";
+    document.getElementById("supplierEmail").value   = "";
+    document.getElementById("supplierAddress").value = "";
+    document.getElementById("supplierNotes").value   = "";
+    supplierModal.classList.remove("hidden");
+});
+
+closeSupplierModal?.addEventListener("click", () => {
+    supplierModal.classList.add("hidden");
+    _editingSupplierCard = null;
+});
+
+saveSupplierBtn?.addEventListener("click", () => {
+    const name    = document.getElementById("supplierName").value.trim();
+    const contact = document.getElementById("supplierContact").value.trim();
+    const phone   = document.getElementById("supplierPhone").value.trim();
+    const email   = document.getElementById("supplierEmail").value.trim();
+    const address = document.getElementById("supplierAddress").value.trim();
+    const notes   = document.getElementById("supplierNotes").value.trim();
+
+    if (!name) { alert("Ingresa el nombre del proveedor"); return; }
+
+    if (_editingSupplierCard) {
+        const card = _editingSupplierCard;
+        card.dataset.name    = name;
+        card.dataset.contact = contact;
+        card.dataset.phone   = phone;
+        card.dataset.email   = email;
+        card.dataset.address = address;
+        card.dataset.notes   = notes;
+        card.querySelector(".supp-name").textContent    = name;
+        card.querySelector(".supp-contact").textContent = contact || "Sin contacto";
+        if (card.querySelector(".supp-phone"))
+            card.querySelector(".supp-phone").textContent = phone ? `📞 ${phone}` : "";
+        _editingSupplierCard = null;
+        document.querySelector("#supplierModal h2").textContent = "Nuevo proveedor";
+    } else {
+        createSupplierCard(name, contact, phone, email, address, notes);
+    }
+
+    document.getElementById("supplierName").value    = "";
+    document.getElementById("supplierContact").value = "";
+    document.getElementById("supplierPhone").value   = "";
+    document.getElementById("supplierEmail").value   = "";
+    document.getElementById("supplierAddress").value = "";
+    document.getElementById("supplierNotes").value   = "";
+    supplierModal.classList.add("hidden");
+    saveSuppliers();
+    refreshSupplierSelect();
+});
+
+function createSupplierCard(name, contact, phone, email, address, notes) {
+    const list = document.getElementById("suppliersList");
+    if (!list) return;
+
+    const card = document.createElement("div");
+    card.className        = "workshop-task";
+    card.dataset.name     = name;
+    card.dataset.contact  = contact  || "";
+    card.dataset.phone    = phone    || "";
+    card.dataset.email    = email    || "";
+    card.dataset.address  = address  || "";
+    card.dataset.notes    = notes    || "";
+
+    card.innerHTML = `
+        <div>
+            <strong class="supp-name">${name}</strong>
+            <p class="supp-contact">${contact || "Sin contacto"}</p>
+            ${phone   ? `<p class="supp-phone">📞 ${phone}</p>` : ""}
+            ${email   ? `<p>✉️ ${email}</p>`                    : ""}
+            ${address ? `<p>📍 ${address}</p>`                   : ""}
+            ${notes   ? `<p style="font-size:.75rem;color:#888">${notes}</p>` : ""}
+        </div>
+        <div class="task-actions">
+            <button class="supp-edit-btn" title="Editar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                </svg>
+            </button>
+            <button class="supp-delete-btn" title="Eliminar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="12" height="12">
+                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+            </button>
+        </div>
+    `;
+
+    card.querySelector(".supp-edit-btn").addEventListener("click", () => {
+        _editingSupplierCard = card;
+        document.querySelector("#supplierModal h2").textContent = "Editar proveedor";
+        document.getElementById("supplierName").value    = card.dataset.name;
+        document.getElementById("supplierContact").value = card.dataset.contact;
+        document.getElementById("supplierPhone").value   = card.dataset.phone;
+        document.getElementById("supplierEmail").value   = card.dataset.email;
+        document.getElementById("supplierAddress").value = card.dataset.address;
+        document.getElementById("supplierNotes").value   = card.dataset.notes;
+        supplierModal.classList.remove("hidden");
+    });
+
+    card.querySelector(".supp-delete-btn").addEventListener("click", () => {
+        if (!confirm(`¿Eliminar proveedor "${name}"?`)) return;
+        card.remove();
+        checkEmptyState("suppliersList");
+        saveSuppliers();
+        refreshSupplierSelect();
+    });
+
+    list.appendChild(card);
+    checkEmptyState("suppliersList");
+    refreshSupplierSelect();
+}
+
+function saveSuppliers() {
+    if (_isLoading) return;
+    const data = [];
+    document.querySelectorAll("#suppliersList .workshop-task").forEach(card => {
+        data.push({
+            name:        card.dataset.name    || "",
+            contactName: card.dataset.contact || "",
+            phone:       card.dataset.phone   || "",
+            email:       card.dataset.email   || "",
+            address:     card.dataset.address || "",
+            notes:       card.dataset.notes   || ""
+        });
+    });
+    DB.save("suppliers", data);
+}
+
+async function loadSuppliers() {
+    const data = await DB.load("suppliers", []);
+    data.forEach(s => createSupplierCard(
+        s.name, s.contactName, s.phone, s.email, s.address, s.notes
+    ));
+}
+
+function refreshTechnicianSelect() {
+    const sel = document.getElementById("taskTechnicianSelect");
+    if (!sel) return;
+    const current = sel.value;
+    sel.innerHTML = `<option value="">👨‍🔧 Asignar técnico (opcional)</option>`;
+    document.querySelectorAll("#techniciansList .workshop-task").forEach(card => {
+        const opt = document.createElement("option");
+        opt.value = opt.textContent = card.dataset.name || "";
+        sel.appendChild(opt);
+    });
+    if (current) sel.value = current;
+}
+function refreshSupplierSelect() {
+    const sel = document.getElementById("poSupplierSelect");
+    if (!sel) return;
+    const current = sel.value;
+    sel.innerHTML = `<option value="">Seleccionar proveedor</option>`;
+    document.querySelectorAll("#suppliersList .workshop-task").forEach(card => {
+        const opt = document.createElement("option");
+        opt.value       = card.dataset.name;
+        opt.textContent = card.dataset.name;
+        sel.appendChild(opt);
+    });
+    if (current) sel.value = current;
+}
+
+/* ========================================
+   MÓDULO: ÓRDENES DE COMPRA
+======================================== */
+
+let _editingPoCard   = null;
+
+const poStatusBtn     = document.getElementById("poStatusBtn");
+const poStatusOptions = document.getElementById("poStatusOptions");
+const poStatusInput   = document.getElementById("poStatus");
+
+poStatusBtn?.addEventListener("click", () => {
+    poStatusOptions?.classList.toggle("hidden");
+});
+
+poStatusOptions?.querySelectorAll(".status-option").forEach(opt => {
+    opt.addEventListener("click", () => {
+        const val = opt.textContent.trim();
+        if (poStatusBtn) poStatusBtn.textContent = val;
+        if (poStatusInput) poStatusInput.value   = val;
+        poStatusOptions.classList.add("hidden");
     });
 });
 
-// --- EL "MENSAJERO" ---
-function avisar(mensaje) {
-    if (window.OneSignal) {
-        OneSignal.push(function() {
-            OneSignal.sendSelfHostedNotification({
-                heading: "Taller App",
-                contents: { en: mensaje }
-            });
-        });
+document.getElementById("poItemsToggleBtn")?.addEventListener("click", () => {
+    document.getElementById("poItemsBody")?.classList.toggle("open");
+    document.getElementById("poItemsArrow")?.classList.toggle("open");
+});
+
+function buildPoItemRow(name = "", qty = 1, price = 0) {
+    const row = document.createElement("div");
+    row.className = "part-row";
+    row.innerHTML = `
+        <input type="text"   class="po-item-name"  placeholder="Producto"  value="${name}"  style="flex:1;border-radius:10px;border:1.5px solid rgba(0,0,0,.08);background:white;font-size:.82rem;padding:8px 10px;outline:none;box-sizing:border-box;">
+        <input type="number" class="po-item-qty"   value="${qty}"   min="1" style="width:58px;text-align:center;border-radius:10px;border:1.5px solid rgba(0,0,0,.08);background:white;font-size:.82rem;padding:8px 4px;outline:none;box-sizing:border-box;">
+        <input type="number" class="po-item-price" value="${price}" min="0" placeholder="$" style="width:72px;text-align:right;border-radius:10px;border:1.5px solid rgba(0,0,0,.08);background:white;font-size:.82rem;padding:8px 4px;outline:none;box-sizing:border-box;">
+        <button type="button" class="part-remove">✕</button>
+    `;
+    row.querySelector(".part-remove").addEventListener("click", () => row.remove());
+    return row;
+}
+
+document.getElementById("addPoItemBtn")?.addEventListener("click", () => {
+    document.getElementById("poItemsList").appendChild(buildPoItemRow());
+});
+
+document.getElementById("addOrdenBtn")?.addEventListener("click", () => {
+    _editingPoCard = null;
+    document.querySelector("#purchaseOrderModal h2").textContent = "Nueva orden de compra";
+    refreshSupplierSelect();
+    document.getElementById("poSupplierSelect").value = "";
+    if (poStatusBtn)   poStatusBtn.textContent = "Borrador";
+    if (poStatusInput) poStatusInput.value     = "Borrador";
+    document.getElementById("poItemsList").innerHTML = "";
+    document.getElementById("poNotes").value         = "";
+    document.getElementById("poItemsBody")?.classList.remove("open");
+    document.getElementById("poItemsArrow")?.classList.remove("open");
+    document.getElementById("purchaseOrderModal").classList.remove("hidden");
+});
+
+document.getElementById("closePurchaseOrderModal")?.addEventListener("click", () => {
+    document.getElementById("purchaseOrderModal").classList.add("hidden");
+    _editingPoCard = null;
+});
+
+document.getElementById("savePurchaseOrderBtn")?.addEventListener("click", () => {
+    const supplier = document.getElementById("poSupplierSelect").value.trim();
+    const status   = poStatusInput?.value || "Borrador";
+    const notes    = document.getElementById("poNotes").value.trim();
+
+    const items = [];
+    document.querySelectorAll("#poItemsList .part-row").forEach(row => {
+        const name  = row.querySelector(".po-item-name")?.value.trim();
+        const qty   = parseInt(row.querySelector(".po-item-qty")?.value)   || 1;
+        const price = parseFloat(row.querySelector(".po-item-price")?.value) || 0;
+        if (name) items.push({ name, quantity: qty, unitPrice: price });
+    });
+
+    if (_editingPoCard) {
+        const card = _editingPoCard;
+        card.dataset.supplierName = supplier;
+        card.dataset.status       = status;
+        card.dataset.notes        = notes;
+        card.dataset.items        = JSON.stringify(items);
+        card.querySelector(".po-supplier").textContent    = supplier || "Sin proveedor";
+        card.querySelector(".po-status-badge").textContent = status;
+        card.querySelector(".po-status-badge").className   = `po-status-badge vp-card-status ${_getPoStatusClass(status)}`;
+        card.querySelector(".po-items-count").textContent  = `${items.length} producto${items.length !== 1 ? "s" : ""}`;
+        _editingPoCard = null;
+        document.querySelector("#purchaseOrderModal h2").textContent = "Nueva orden de compra";
+    } else {
+        createPurchaseOrderCard({ supplierName: supplier, status, notes, items });
+    }
+
+    document.getElementById("purchaseOrderModal").classList.add("hidden");
+    document.getElementById("poItemsList").innerHTML = "";
+    savePurchaseOrders();
+    refreshPoSelect();
+});
+
+function _getPoStatusClass(status) {
+    if (status === "Recibida")  return "status-listo";
+    if (status === "Enviada")   return "status-servicio";
+    if (status === "Cancelada") return "status-entregado";
+    return "status-ingresado";
+}
+
+function createPurchaseOrderCard({ supplierName = "", status = "Borrador", notes = "", items = [], createdAt = "" }) {
+    const list = document.getElementById("ordenesList");
+    if (!list) return;
+
+    const date = createdAt
+        ? new Date(createdAt).toLocaleDateString("es-MX")
+        : new Date().toLocaleDateString("es-MX");
+
+    const card = document.createElement("div");
+    card.className            = "workshop-task";
+    card.dataset.supplierName = supplierName;
+    card.dataset.status       = status;
+    card.dataset.notes        = notes;
+    card.dataset.items        = JSON.stringify(items);
+    card.dataset.createdAt    = createdAt || new Date().toISOString();
+
+    card.innerHTML = `
+        <div>
+            <strong class="po-supplier">${supplierName || "Sin proveedor"}</strong>
+            <p><span class="po-status-badge vp-card-status ${_getPoStatusClass(status)}">${status}</span></p>
+            <p class="po-items-count">${items.length} producto${items.length !== 1 ? "s" : ""}</p>
+            ${notes ? `<p style="font-size:.75rem;color:#888">${notes}</p>` : ""}
+            <p style="font-size:.72rem;color:#aaa;">📅 ${date}</p>
+        </div>
+        <div class="task-actions">
+            <button class="po-edit-btn" title="Editar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                </svg>
+            </button>
+            <button class="po-delete-btn" title="Eliminar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="12" height="12">
+                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+            </button>
+        </div>
+    `;
+
+    card.querySelector(".po-edit-btn").addEventListener("click", () => {
+        _editingPoCard = card;
+        document.querySelector("#purchaseOrderModal h2").textContent = "Editar orden";
+        refreshSupplierSelect();
+        document.getElementById("poSupplierSelect").value = card.dataset.supplierName || "";
+        if (poStatusBtn)   poStatusBtn.textContent = card.dataset.status || "Borrador";
+        if (poStatusInput) poStatusInput.value     = card.dataset.status || "Borrador";
+        document.getElementById("poNotes").value   = card.dataset.notes || "";
+
+        const itemsData = JSON.parse(card.dataset.items || "[]");
+        const itemsList = document.getElementById("poItemsList");
+        itemsList.innerHTML = "";
+        itemsData.forEach(i => itemsList.appendChild(buildPoItemRow(i.name, i.quantity, i.unitPrice)));
+        if (itemsData.length > 0) {
+            document.getElementById("poItemsBody")?.classList.add("open");
+            document.getElementById("poItemsArrow")?.classList.add("open");
+        }
+        document.getElementById("purchaseOrderModal").classList.remove("hidden");
+    });
+
+    card.querySelector(".po-delete-btn").addEventListener("click", () => {
+        if (!confirm("¿Eliminar esta orden de compra?")) return;
+        card.remove();
+        checkEmptyState("ordenesList");
+        savePurchaseOrders();
+        refreshPoSelect();
+    });
+
+    list.appendChild(card);
+    checkEmptyState("ordenesList");
+}
+
+async function savePurchaseOrders() {
+    if (_isLoading) return;
+    showSaveToast("saving");
+    try {
+        const { data: { session } } = await _supabase.auth.getSession();
+        if (!session) { showSaveToast("error"); return; }
+        const uid = session.user.id;
+
+        await _supabase.from("purchase_orders").delete().eq("user_id", uid);
+
+        const cards = document.querySelectorAll("#ordenesList .workshop-task");
+        for (const card of cards) {
+            const { data: inserted, error } = await _supabase
+                .from("purchase_orders")
+                .insert({ user_id: uid, supplier_name: card.dataset.supplierName || "", status: card.dataset.status || "Borrador", notes: card.dataset.notes || "" })
+                .select();
+            if (error) throw error;
+
+            const poId  = inserted[0].id;
+            const items = JSON.parse(card.dataset.items || "[]");
+            if (items.length > 0) {
+                await _supabase.from("purchase_order_items").insert(
+                    items.map(i => ({
+                        purchase_order_id: poId,
+                        name:       i.name,
+                        quantity:   i.quantity  || 1,
+                        unit_price: i.unitPrice || 0
+                    }))
+                );
+            }
+        }
+        showSaveToast("ok");
+    } catch (e) {
+        showSaveToast("error");
+        console.error("Error guardando órdenes:", e);
     }
 }
+
+async function loadPurchaseOrders() {
+    try {
+        const { data: { session } } = await _supabase.auth.getSession();
+        if (!session) return;
+        const uid = session.user.id;
+
+        const { data: orders, error } = await _supabase
+            .from("purchase_orders").select("*").eq("user_id", uid);
+        if (error || !orders?.length) return;
+
+        const orderIds = orders.map(o => o.id);
+        const { data: items } = await _supabase
+            .from("purchase_order_items").select("*").in("purchase_order_id", orderIds);
+
+        orders.forEach(order => {
+            const orderItems = (items || [])
+                .filter(i => i.purchase_order_id === order.id)
+                .map(i => ({ name: i.name, quantity: i.quantity, unitPrice: i.unit_price }));
+            createPurchaseOrderCard({
+                supplierName: order.supplier_name || "",
+                status:    order.status,
+                notes:     order.notes,
+                items:     orderItems,
+                createdAt: order.created_at
+            });
+        });
+    } catch (e) {
+        console.error("Error cargando órdenes:", e);
+    }
+}
+
+function refreshPoSelect() {
+    const sel = document.getElementById("recepcionPoSelect");
+    if (!sel) return;
+    const current = sel.value;
+    sel.innerHTML = `<option value="">Vincular a orden de compra (opcional)</option>`;
+    document.querySelectorAll("#ordenesList .workshop-task").forEach((card, idx) => {
+        const opt = document.createElement("option");
+        const supplier = card.dataset.supplierName || "Sin proveedor";
+        opt.value       = supplier + "_" + idx;
+        opt.textContent = `${supplier} — ${card.dataset.status}`;
+        sel.appendChild(opt);
+    });
+    if (current) sel.value = current;
+}
+
+/* ========================================
+   MÓDULO: RECEPCIONES
+======================================== */
+
+let _editingRecepcionCard = null;
+
+document.getElementById("recepcionItemsToggleBtn")?.addEventListener("click", () => {
+    document.getElementById("recepcionItemsBody")?.classList.toggle("open");
+    document.getElementById("recepcionItemsArrow")?.classList.toggle("open");
+});
+
+function buildRecepcionItemRow(name = "", qty = 1) {
+    const row = document.createElement("div");
+    row.className = "part-row";
+
+    let optionsHTML = `<option value="">Seleccionar del inventario</option>`;
+    document.querySelectorAll(".inventory-card").forEach(card => {
+        const n = card.dataset.fullName || "";
+        optionsHTML += `<option value="${n}" ${n === name ? "selected" : ""}>${n}</option>`;
+    });
+    optionsHTML += `<option value="__manual__" ${name && !document.querySelector(`.inventory-card[data-full-name="${name}"]`) ? "selected" : ""}>✏️ Otro producto...</option>`;
+
+    row.innerHTML = `
+        <select class="part-select recep-item-select" style="flex:1;">${optionsHTML}</select>
+        <input type="text" class="recep-item-manual" placeholder="Nombre" value="${name}"
+            style="display:none;flex:1;min-width:0;border-radius:10px;border:1.5px solid rgba(0,0,0,.08);background:white;font-size:.82rem;padding:8px 10px;outline:none;box-sizing:border-box;">
+        <input type="number" class="recep-item-qty part-qty" value="${qty}" min="1">
+        <button type="button" class="part-remove">✕</button>
+    `;
+
+    // Si el nombre no existe en inventario, mostrar campo manual
+    const isManual = name && !Array.from(document.querySelectorAll(".inventory-card"))
+        .some(c => (c.dataset.fullName || "") === name);
+    if (isManual) {
+        row.querySelector(".recep-item-select").value       = "__manual__";
+        row.querySelector(".recep-item-manual").style.display = "block";
+        row.querySelector(".recep-item-select").style.width = "130px";
+        row.querySelector(".recep-item-select").style.flex  = "0 0 auto";
+    }
+
+    row.querySelector(".recep-item-select").addEventListener("change", function () {
+        const manual = row.querySelector(".recep-item-manual");
+        if (this.value === "__manual__") {
+            manual.style.display    = "block";
+            this.style.width = "130px";
+            this.style.flex  = "0 0 auto";
+        } else {
+            manual.style.display = "none";
+            this.style.width = "";
+            this.style.flex  = "1";
+        }
+    });
+
+    row.querySelector(".part-remove").addEventListener("click", () => row.remove());
+    return row;
+}
+
+document.getElementById("addRecepcionItemBtn")?.addEventListener("click", () => {
+    document.getElementById("recepcionItemsList").appendChild(buildRecepcionItemRow());
+});
+
+document.getElementById("addRecepcionBtn")?.addEventListener("click", () => {
+    _editingRecepcionCard = null;
+    document.querySelector("#recepcionModal h2").textContent = "Nueva recepción";
+    refreshPoSelect();
+    document.getElementById("recepcionPoSelect").value      = "";
+    document.getElementById("recepcionItemsList").innerHTML  = "";
+    document.getElementById("recepcionNotes").value          = "";
+    document.getElementById("recepcionItemsBody")?.classList.remove("open");
+    document.getElementById("recepcionItemsArrow")?.classList.remove("open");
+    document.getElementById("recepcionModal").classList.remove("hidden");
+});
+
+document.getElementById("closeRecepcionModal")?.addEventListener("click", () => {
+    document.getElementById("recepcionModal").classList.add("hidden");
+    _editingRecepcionCard = null;
+});
+
+document.getElementById("saveRecepcionBtn")?.addEventListener("click", () => {
+    const poRef = document.getElementById("recepcionPoSelect").value.trim();
+    const notes = document.getElementById("recepcionNotes").value.trim();
+
+    const items = [];
+    document.querySelectorAll("#recepcionItemsList .part-row").forEach(row => {
+        const sel    = row.querySelector(".recep-item-select");
+        const manual = row.querySelector(".recep-item-manual");
+        const name   = sel.value === "__manual__" ? manual.value.trim() : sel.value;
+        const qty    = parseInt(row.querySelector(".recep-item-qty")?.value) || 1;
+        if (name) {
+            items.push({ name, quantity: qty });
+            // Sumar stock al inventario si el producto existe
+            document.querySelectorAll(".inventory-card").forEach(card => {
+                if ((card.dataset.fullName || "").toLowerCase() === name.toLowerCase()) {
+                    const newStock = (parseInt(card.dataset.stock) || 0) + qty;
+                    card.dataset.stock = newStock;
+                    refreshCardStock(card, newStock);
+                }
+            });
+        }
+    });
+
+    if (_editingRecepcionCard) {
+        const card = _editingRecepcionCard;
+        card.dataset.poRef = poRef;
+        card.dataset.notes = notes;
+        card.dataset.items = JSON.stringify(items);
+        card.querySelector(".recep-po").textContent    = poRef  || "Sin orden vinculada";
+        card.querySelector(".recep-count").textContent = `${items.length} producto${items.length !== 1 ? "s" : ""} recibidos`;
+        _editingRecepcionCard = null;
+        document.querySelector("#recepcionModal h2").textContent = "Nueva recepción";
+    } else {
+        createRecepcionCard({ poRef, notes, items });
+    }
+
+    document.getElementById("recepcionModal").classList.add("hidden");
+    document.getElementById("recepcionItemsList").innerHTML = "";
+    saveRecepciones();
+    saveInventory();
+});
+
+function createRecepcionCard({ poRef = "", notes = "", items = [], createdAt = "" }) {
+    const list = document.getElementById("recepcionesList");
+    if (!list) return;
+
+    const date = createdAt
+        ? new Date(createdAt).toLocaleDateString("es-MX")
+        : new Date().toLocaleDateString("es-MX");
+
+    const card = document.createElement("div");
+    card.className      = "workshop-task";
+    card.dataset.poRef  = poRef;
+    card.dataset.notes  = notes;
+    card.dataset.items  = JSON.stringify(items);
+    card.dataset.createdAt = createdAt || new Date().toISOString();
+
+    card.innerHTML = `
+        <div>
+            <strong>📦 Recepción de mercancía</strong>
+            <p class="recep-po">${poRef || "Sin orden vinculada"}</p>
+            <p class="recep-count">${items.length} producto${items.length !== 1 ? "s" : ""} recibidos</p>
+            ${notes ? `<p style="font-size:.75rem;color:#888">${notes}</p>` : ""}
+            <p style="font-size:.72rem;color:#aaa;">📅 ${date}</p>
+        </div>
+        <div class="task-actions">
+            <button class="recep-edit-btn" title="Editar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                </svg>
+            </button>
+            <button class="recep-delete-btn" title="Eliminar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="12" height="12">
+                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+            </button>
+        </div>
+    `;
+
+    card.querySelector(".recep-edit-btn").addEventListener("click", () => {
+        _editingRecepcionCard = card;
+        document.querySelector("#recepcionModal h2").textContent = "Editar recepción";
+        refreshPoSelect();
+        document.getElementById("recepcionPoSelect").value = card.dataset.poRef || "";
+        document.getElementById("recepcionNotes").value    = card.dataset.notes || "";
+        const itemsData = JSON.parse(card.dataset.items || "[]");
+        const itemsList = document.getElementById("recepcionItemsList");
+        itemsList.innerHTML = "";
+        itemsData.forEach(i => itemsList.appendChild(buildRecepcionItemRow(i.name, i.quantity)));
+        if (itemsData.length > 0) {
+            document.getElementById("recepcionItemsBody")?.classList.add("open");
+            document.getElementById("recepcionItemsArrow")?.classList.add("open");
+        }
+        document.getElementById("recepcionModal").classList.remove("hidden");
+    });
+
+    card.querySelector(".recep-delete-btn").addEventListener("click", () => {
+        if (!confirm("¿Eliminar esta recepción?")) return;
+        card.remove();
+        checkEmptyState("recepcionesList");
+        saveRecepciones();
+    });
+
+    list.appendChild(card);
+    checkEmptyState("recepcionesList");
+}
+
+async function saveRecepciones() {
+    if (_isLoading) return;
+    showSaveToast("saving");
+    try {
+        const { data: { session } } = await _supabase.auth.getSession();
+        if (!session) { showSaveToast("error"); return; }
+        const uid = session.user.id;
+
+        await _supabase.from("receptions").delete().eq("user_id", uid);
+
+        const cards = document.querySelectorAll("#recepcionesList .workshop-task");
+        for (const card of cards) {
+            const { data: inserted, error } = await _supabase
+                .from("receptions")
+                .insert({ user_id: uid, po_reference: card.dataset.poRef || "", notes: card.dataset.notes || "" })
+                .select();
+            if (error) throw error;
+
+            const recId = inserted[0].id;
+            const items = JSON.parse(card.dataset.items || "[]");
+            if (items.length > 0) {
+                await _supabase.from("reception_items").insert(
+                    items.map(i => ({
+                        reception_id:      recId,
+                        name:              i.name,
+                        quantity_received: i.quantity || 1
+                    }))
+                );
+            }
+        }
+        showSaveToast("ok");
+    } catch (e) {
+        showSaveToast("error");
+        console.error("Error guardando recepciones:", e);
+    }
+}
+
+async function loadRecepciones() {
+    try {
+        const { data: { session } } = await _supabase.auth.getSession();
+        if (!session) return;
+        const uid = session.user.id;
+
+        const { data: recs, error } = await _supabase
+            .from("receptions").select("*").eq("user_id", uid);
+        if (error || !recs?.length) return;
+
+        const recIds = recs.map(r => r.id);
+        const { data: items } = await _supabase
+            .from("reception_items").select("*").in("reception_id", recIds);
+
+        recs.forEach(rec => {
+            const recItems = (items || [])
+                .filter(i => i.reception_id === rec.id)
+                .map(i => ({ name: i.name, quantity: i.quantity_received }));
+createRecepcionCard({ poRef: rec.po_reference || "", notes: rec.notes, items: recItems, createdAt: rec.created_at });        });
+    } catch (e) {
+        console.error("Error cargando recepciones:", e);
+    }
+}
+
+/* ========================================
+   MÓDULO: FACTURAS
+======================================== */
+
+let _editingFacturaCard = null;
+
+const facturaStatusBtn     = document.getElementById("facturaStatusBtn");
+const facturaStatusOptions = document.getElementById("facturaStatusOptions");
+const facturaStatusInput   = document.getElementById("facturaStatus");
+
+facturaStatusBtn?.addEventListener("click", () => {
+    facturaStatusOptions?.classList.toggle("hidden");
+});
+
+facturaStatusOptions?.querySelectorAll(".status-option").forEach(opt => {
+    opt.addEventListener("click", () => {
+        const val = opt.textContent.trim();
+        if (facturaStatusBtn)   facturaStatusBtn.textContent = val;
+        if (facturaStatusInput) facturaStatusInput.value     = val;
+        facturaStatusOptions.classList.add("hidden");
+    });
+});
+
+document.getElementById("facturaItemsToggleBtn")?.addEventListener("click", () => {
+    document.getElementById("facturaItemsBody")?.classList.toggle("open");
+    document.getElementById("facturaItemsArrow")?.classList.toggle("open");
+});
+
+function buildFacturaItemRow(desc = "", qty = 1, price = 0) {
+    const row = document.createElement("div");
+    row.className = "part-row";
+    row.innerHTML = `
+        <input type="text"   class="fact-item-desc"  placeholder="Servicio / concepto" value="${desc}"  style="flex:1;border-radius:10px;border:1.5px solid rgba(0,0,0,.08);background:white;font-size:.82rem;padding:8px 10px;outline:none;box-sizing:border-box;">
+        <input type="number" class="fact-item-qty"   value="${qty}"   min="1" style="width:58px;text-align:center;border-radius:10px;border:1.5px solid rgba(0,0,0,.08);background:white;font-size:.82rem;padding:8px 4px;outline:none;box-sizing:border-box;">
+        <input type="number" class="fact-item-price" value="${price}" min="0" placeholder="$" style="width:72px;text-align:right;border-radius:10px;border:1.5px solid rgba(0,0,0,.08);background:white;font-size:.82rem;padding:8px 4px;outline:none;box-sizing:border-box;">
+        <button type="button" class="part-remove">✕</button>
+    `;
+    row.querySelector(".part-remove").addEventListener("click", () => row.remove());
+    return row;
+}
+
+document.getElementById("addFacturaItemBtn")?.addEventListener("click", () => {
+    document.getElementById("facturaItemsList").appendChild(buildFacturaItemRow());
+});
+
+function refreshClientSelect() {
+    const sel = document.getElementById("facturaClientSelect");
+    if (!sel) return;
+    const current = sel.value;
+    sel.innerHTML = `<option value="">Seleccionar cliente (opcional)</option>`;
+    document.querySelectorAll(".cp-card").forEach(card => {
+        const opt = document.createElement("option");
+        opt.value = opt.textContent = card.dataset.name || "";
+        sel.appendChild(opt);
+    });
+    if (current) sel.value = current;
+}
+
+function refreshVehicleSelectFactura() {
+    const sel = document.getElementById("facturaVehicleSelect");
+    if (!sel) return;
+    const current = sel.value;
+    sel.innerHTML = `<option value="">Seleccionar vehículo (opcional)</option>`;
+    document.querySelectorAll(".vp-card").forEach(card => {
+        const name  = card.dataset.vehicleName || "";
+        const plate = card.dataset.plate || "";
+        const opt   = document.createElement("option");
+        opt.value       = name;
+        opt.textContent = `${name}${plate ? ` (${plate})` : ""}`;
+        sel.appendChild(opt);
+    });
+    if (current) sel.value = current;
+}
+
+document.getElementById("addFacturaBtn")?.addEventListener("click", () => {
+    _editingFacturaCard = null;
+    document.querySelector("#facturaModal h2").textContent = "Nueva factura";
+    refreshClientSelect();
+    refreshVehicleSelectFactura();
+    document.getElementById("facturaClientSelect").value  = "";
+    document.getElementById("facturaVehicleSelect").value = "";
+    if (facturaStatusBtn)   facturaStatusBtn.textContent = "Borrador";
+    if (facturaStatusInput) facturaStatusInput.value     = "Borrador";
+    document.getElementById("facturaItemsList").innerHTML = "";
+    document.getElementById("facturaNotes").value         = "";
+    document.getElementById("facturaItemsBody")?.classList.remove("open");
+    document.getElementById("facturaItemsArrow")?.classList.remove("open");
+    document.getElementById("facturaModal").classList.remove("hidden");
+});
+
+document.getElementById("closeFacturaModal")?.addEventListener("click", () => {
+    document.getElementById("facturaModal").classList.add("hidden");
+    _editingFacturaCard = null;
+});
+
+document.getElementById("saveFacturaBtn")?.addEventListener("click", () => {
+    const client  = document.getElementById("facturaClientSelect").value.trim();
+    const vehicle = document.getElementById("facturaVehicleSelect").value.trim();
+    const status  = facturaStatusInput?.value || "Borrador";
+    const notes   = document.getElementById("facturaNotes").value.trim();
+
+    const items = [];
+    let total = 0;
+    document.querySelectorAll("#facturaItemsList .part-row").forEach(row => {
+        const desc  = row.querySelector(".fact-item-desc")?.value.trim();
+        const qty   = parseInt(row.querySelector(".fact-item-qty")?.value)    || 1;
+        const price = parseFloat(row.querySelector(".fact-item-price")?.value) || 0;
+        if (desc) {
+            items.push({ description: desc, quantity: qty, unitPrice: price });
+            total += qty * price;
+        }
+    });
+
+    if (_editingFacturaCard) {
+        const card = _editingFacturaCard;
+        const newTotal = items.reduce((s, i) => s + (i.quantity || 1) * (i.unitPrice || 0), 0);
+        card.dataset.client  = client;
+        card.dataset.vehicle = vehicle;
+        card.dataset.status  = status;
+        card.dataset.notes   = notes;
+        card.dataset.items   = JSON.stringify(items);
+        card.querySelector(".fact-client").textContent  = client  || "Sin cliente";
+        card.querySelector(".fact-vehicle").textContent = vehicle ? `🚗 ${vehicle}` : "";
+        card.querySelector(".fact-status").className    = `fact-status vp-card-status ${_getFacturaStatusClass(status)}`;
+        card.querySelector(".fact-status").textContent  = status;
+        card.querySelector(".fact-total").textContent   = `$${newTotal.toLocaleString("es-MX")}`;
+        _editingFacturaCard = null;
+        document.querySelector("#facturaModal h2").textContent = "Nueva factura";
+    } else {
+        createFacturaCard({ client, vehicle, status, notes, items });
+    }
+
+    document.getElementById("facturaModal").classList.add("hidden");
+    document.getElementById("facturaItemsList").innerHTML = "";
+    saveFacturas();
+});
+
+function _getFacturaStatusClass(status) {
+    if (status === "Pagada")    return "status-listo";
+    if (status === "Emitida")   return "status-servicio";
+    if (status === "Cancelada") return "status-entregado";
+    return "status-ingresado";
+}
+
+function createFacturaCard({ client = "", vehicle = "", status = "Borrador", notes = "", items = [], createdAt = "" }) {
+    const list = document.getElementById("facturasList");
+    if (!list) return;
+
+    const date  = createdAt ? new Date(createdAt).toLocaleDateString("es-MX") : new Date().toLocaleDateString("es-MX");
+    const total = items.reduce((s, i) => s + (i.quantity || 1) * (i.unitPrice || 0), 0);
+
+    const card = document.createElement("div");
+    card.className       = "workshop-task";
+    card.dataset.client  = client;
+    card.dataset.vehicle = vehicle;
+    card.dataset.status  = status;
+    card.dataset.notes   = notes;
+    card.dataset.items   = JSON.stringify(items);
+    card.dataset.createdAt = createdAt || new Date().toISOString();
+
+    card.innerHTML = `
+        <div>
+            <strong class="fact-client">${client || "Sin cliente"}</strong>
+            <p class="fact-vehicle">${vehicle ? `🚗 ${vehicle}` : ""}</p>
+            <p><span class="fact-status vp-card-status ${_getFacturaStatusClass(status)}">${status}</span></p>
+            <p class="fact-total" style="font-weight:700;color:#111;">$${total.toLocaleString("es-MX")}</p>
+            <p style="font-size:.72rem;color:#aaa;">📅 ${date}</p>
+            ${notes ? `<p style="font-size:.75rem;color:#888">${notes}</p>` : ""}
+        </div>
+        <div class="task-actions">
+            <button class="fact-edit-btn" title="Editar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                </svg>
+            </button>
+            <button class="fact-delete-btn" title="Eliminar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="12" height="12">
+                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+            </button>
+        </div>
+    `;
+
+    card.querySelector(".fact-edit-btn").addEventListener("click", () => {
+        _editingFacturaCard = card;
+        document.querySelector("#facturaModal h2").textContent = "Editar factura";
+        refreshClientSelect();
+        refreshVehicleSelectFactura();
+        document.getElementById("facturaClientSelect").value  = card.dataset.client  || "";
+        document.getElementById("facturaVehicleSelect").value = card.dataset.vehicle || "";
+        if (facturaStatusBtn)   facturaStatusBtn.textContent = card.dataset.status || "Borrador";
+        if (facturaStatusInput) facturaStatusInput.value     = card.dataset.status || "Borrador";
+        document.getElementById("facturaNotes").value = card.dataset.notes || "";
+        const itemsData = JSON.parse(card.dataset.items || "[]");
+        const itemsList = document.getElementById("facturaItemsList");
+        itemsList.innerHTML = "";
+        itemsData.forEach(i => itemsList.appendChild(buildFacturaItemRow(i.description, i.quantity, i.unitPrice)));
+        if (itemsData.length > 0) {
+            document.getElementById("facturaItemsBody")?.classList.add("open");
+            document.getElementById("facturaItemsArrow")?.classList.add("open");
+        }
+        document.getElementById("facturaModal").classList.remove("hidden");
+    });
+
+    card.querySelector(".fact-delete-btn").addEventListener("click", () => {
+        if (!confirm("¿Eliminar esta factura?")) return;
+        card.remove();
+        checkEmptyState("facturasList");
+        saveFacturas();
+    });
+
+    list.appendChild(card);
+    checkEmptyState("facturasList");
+}
+
+async function saveFacturas() {
+    if (_isLoading) return;
+    showSaveToast("saving");
+    try {
+        const { data: { session } } = await _supabase.auth.getSession();
+        if (!session) { showSaveToast("error"); return; }
+        const uid = session.user.id;
+
+        await _supabase.from("invoices").delete().eq("user_id", uid);
+
+        const cards = document.querySelectorAll("#facturasList .workshop-task");
+        for (const card of cards) {
+            const { data: inserted, error } = await _supabase
+                .from("invoices")
+                .insert({ user_id: uid, client_name: card.dataset.client || "", vehicle_name: card.dataset.vehicle || "", status: card.dataset.status || "Borrador", notes: card.dataset.notes || "" })
+                .select();
+            if (error) throw error;
+
+            const invId = inserted[0].id;
+            const items = JSON.parse(card.dataset.items || "[]");
+            if (items.length > 0) {
+                await _supabase.from("invoice_items").insert(
+                    items.map(i => ({
+                        invoice_id:  invId,
+                        description: i.description || "",
+                        quantity:    i.quantity    || 1,
+                        unit_price:  i.unitPrice   || 0
+                    }))
+                );
+            }
+        }
+        showSaveToast("ok");
+    } catch (e) {
+        showSaveToast("error");
+        console.error("Error guardando facturas:", e);
+    }
+}
+
+async function loadInvoices() {
+    try {
+        const { data: { session } } = await _supabase.auth.getSession();
+        if (!session) return;
+        const uid = session.user.id;
+
+        const { data: invoices, error } = await _supabase
+            .from("invoices").select("*").eq("user_id", uid);
+        if (error || !invoices?.length) return;
+
+        const invIds = invoices.map(i => i.id);
+        const { data: items } = await _supabase
+            .from("invoice_items").select("*").in("invoice_id", invIds);
+
+        invoices.forEach(inv => {
+            const invItems = (items || [])
+                .filter(i => i.invoice_id === inv.id)
+                .map(i => ({ description: i.description, quantity: i.quantity, unitPrice: i.unit_price }));
+createFacturaCard({ client: inv.client_name || "", vehicle: inv.vehicle_name || "", status: inv.status, notes: inv.notes, items: invItems, createdAt: inv.created_at });        });
+    } catch (e) {
+        console.error("Error cargando facturas:", e);
+    }
+}
+
+/* ========================================
+   EMPTY STATES — MÓDULOS NUEVOS
+======================================== */
+Object.assign(EMPTY_MSGS, {
+    suppliersList:   "Sin proveedores registrados",
+    ordenesList:     "Sin órdenes de compra",
+    recepcionesList: "Sin recepciones registradas",
+    facturasList:    "Sin facturas",
+    techniciansList: "Sin técnicos registrados"
+});
+
+/* ========================================
+   NAVEGACIÓN — COMPRAS Y TÉCNICOS
+======================================== */
+
+const comprasPage       = document.getElementById("comprasPage");
+const proveedoresPage   = document.getElementById("proveedoresPage");
+const ordenesCompraPage = document.getElementById("ordenesCompraPage");
+const recepcionesPage   = document.getElementById("recepcionesPage");
+const facturasPage      = document.getElementById("facturasPage");
+const tecnicosPage      = document.getElementById("tecnicosPage");
+
+navItems[4]?.addEventListener("click", () => {
+    hideAllPages();
+    comprasPage.classList.remove("hidden");
+    setActiveNav(4);
+});
+
+document.getElementById("backFromCompras")?.addEventListener("click", goBackToDashboard);
+
+document.getElementById("goProveedores")?.addEventListener("click", () => {
+    comprasPage.classList.add("hidden");
+    proveedoresPage.classList.remove("hidden");
+    checkEmptyState("suppliersList");
+});
+
+document.getElementById("goOrdenesCompra")?.addEventListener("click", () => {
+    comprasPage.classList.add("hidden");
+    ordenesCompraPage.classList.remove("hidden");
+    refreshSupplierSelect();
+    checkEmptyState("ordenesList");
+});
+
+document.getElementById("goRecepciones")?.addEventListener("click", () => {
+    comprasPage.classList.add("hidden");
+    recepcionesPage.classList.remove("hidden");
+    refreshPoSelect();
+    checkEmptyState("recepcionesList");
+});
+
+document.getElementById("goFacturas")?.addEventListener("click", () => {
+    comprasPage.classList.add("hidden");
+    facturasPage.classList.remove("hidden");
+    checkEmptyState("facturasList");
+});
+
+function goBackToCompras() {
+    proveedoresPage?.classList.add("hidden");
+    ordenesCompraPage?.classList.add("hidden");
+    recepcionesPage?.classList.add("hidden");
+    facturasPage?.classList.add("hidden");
+    comprasPage.classList.remove("hidden");
+}
+
+document.getElementById("backFromProveedores")?.addEventListener("click", goBackToCompras);
+document.getElementById("backFromOrdenes")?.addEventListener("click",     goBackToCompras);
+document.getElementById("backFromRecepciones")?.addEventListener("click", goBackToCompras);
+document.getElementById("backFromFacturas")?.addEventListener("click",    goBackToCompras);
+
+// Técnicos: desde Taller
+document.getElementById("goTecnicosBtn")?.addEventListener("click", () => {
+    workshopPage.classList.add("hidden");
+    tecnicosPage.classList.remove("hidden");
+    checkEmptyState("techniciansList");
+});
+
+document.getElementById("backFromTecnicos")?.addEventListener("click", () => {
+    tecnicosPage.classList.add("hidden");
+    workshopPage.classList.remove("hidden");
+});
+
+// Cerrar dropdowns de status al hacer click fuera
+document.addEventListener("click", (e) => {
+    if (!e.target.closest("#purchaseOrderModal .custom-status-select"))
+        poStatusOptions?.classList.add("hidden");
+    if (!e.target.closest("#facturaModal .custom-status-select"))
+        facturaStatusOptions?.classList.add("hidden");
+});
 

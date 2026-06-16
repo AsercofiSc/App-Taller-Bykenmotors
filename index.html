@@ -29,7 +29,6 @@
 
     <link rel="stylesheet" href="css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
 
 </head>
 
@@ -120,7 +119,7 @@
             ←
         </button>
 
-        <div>
+        <div style="flex:1;">
 
             <h1>Taller</h1>
 
@@ -129,6 +128,20 @@
             </p>
 
         </div>
+
+        <button id="goTecnicosBtn" style="
+            padding:7px 14px;
+            border-radius:12px;
+            background:rgba(245,130,13,.10);
+            color:#f5820d;
+            border:1px solid rgba(245,130,13,.20);
+            font-size:.75rem;
+            font-weight:600;
+            cursor:pointer;
+            height:auto;
+            box-shadow:none;
+            white-space:nowrap;
+        ">👨‍🔧 Técnicos</button>
 
     </div>
 
@@ -373,6 +386,11 @@
             <div class="nav-item">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
                 <span>Taller</span>
+            </div>
+
+            <div class="nav-item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+                <span>Compras</span>
             </div>
 
         </nav>
@@ -843,6 +861,12 @@
     id="taskStatus"
     value="En proceso"
 />
+
+<select id="taskTechnicianSelect" style="width:100%;padding:12px;border-radius:12px;border:1px solid rgba(0,0,0,.1);font-size:.9rem;font-family:inherit;background:white;box-sizing:border-box;">
+    <option value="">👨‍🔧 Asignar técnico (opcional)</option>
+</select>
+
+<!-- PIEZAS UTILIZADAS -->
 <!-- PIEZAS UTILIZADAS -->
 <div class="parts-section">
     <button type="button" id="partsToggleBtn" class="parts-toggle">
@@ -865,6 +889,289 @@
 
     </div>
 
+</div>
+<!-- =============================================
+     MÓDULO COMPRAS — HUB
+============================================= -->
+<div id="comprasPage" class="workshop-page hidden">
+    <div class="inventory-header">
+        <button id="backFromCompras" class="back-btn">←</button>
+        <div>
+            <h1>Compras</h1>
+            <p>Proveedores, órdenes y facturas</p>
+        </div>
+    </div>
+    <div class="compras-hub-grid">
+        <div class="compras-hub-card" id="goProveedores">
+            <div class="compras-hub-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="28" height="28"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            </div>
+            <h3>Proveedores</h3>
+            <p>Contactos y catálogo</p>
+        </div>
+        <div class="compras-hub-card" id="goOrdenesCompra">
+            <div class="compras-hub-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="28" height="28"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            </div>
+            <h3>Órdenes de compra</h3>
+            <p>Crear y gestionar OC</p>
+        </div>
+        <div class="compras-hub-card" id="goRecepciones">
+            <div class="compras-hub-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="28" height="28"><rect x="1" y="3" width="15" height="13" rx="2"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+            </div>
+            <h3>Recepciones</h3>
+            <p>Recibir mercancía</p>
+        </div>
+        <div class="compras-hub-card" id="goFacturas">
+            <div class="compras-hub-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="28" height="28"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="2"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="11" y2="16"/></svg>
+            </div>
+            <h3>Facturas</h3>
+            <p>Cobros al cliente</p>
+        </div>
+    </div>
+</div>
+
+<!-- PROVEEDORES -->
+<div id="proveedoresPage" class="workshop-page hidden">
+    <div class="inventory-header">
+        <button id="backFromProveedores" class="back-btn">←</button>
+        <div>
+            <h1>Proveedores</h1>
+            <p>Catálogo de proveedores</p>
+        </div>
+    </div>
+    <div class="workshop-section">
+        <div class="section-header">
+            <h2>Mis proveedores</h2>
+            <button id="addSupplierBtn">+</button>
+        </div>
+        <div id="suppliersList" class="workshop-tasks"></div>
+    </div>
+</div>
+
+<!-- ÓRDENES DE COMPRA -->
+<div id="ordenesCompraPage" class="workshop-page hidden">
+    <div class="inventory-header">
+        <button id="backFromOrdenes" class="back-btn">←</button>
+        <div>
+            <h1>Órdenes de compra</h1>
+            <p>Gestión de órdenes a proveedores</p>
+        </div>
+    </div>
+    <div class="workshop-section">
+        <div class="section-header">
+            <h2>Órdenes</h2>
+            <button id="addOrdenBtn">+</button>
+        </div>
+        <div id="ordenesList" class="workshop-tasks"></div>
+    </div>
+</div>
+
+<!-- RECEPCIONES -->
+<div id="recepcionesPage" class="workshop-page hidden">
+    <div class="inventory-header">
+        <button id="backFromRecepciones" class="back-btn">←</button>
+        <div>
+            <h1>Recepciones</h1>
+            <p>Mercancía recibida de proveedores</p>
+        </div>
+    </div>
+    <div class="workshop-section">
+        <div class="section-header">
+            <h2>Entradas de mercancía</h2>
+            <button id="addRecepcionBtn">+</button>
+        </div>
+        <div id="recepcionesList" class="workshop-tasks"></div>
+    </div>
+</div>
+
+<!-- FACTURAS -->
+<div id="facturasPage" class="workshop-page hidden">
+    <div class="inventory-header">
+        <button id="backFromFacturas" class="back-btn">←</button>
+        <div>
+            <h1>Facturas</h1>
+            <p>Cobros y servicios al cliente</p>
+        </div>
+    </div>
+    <div class="workshop-section">
+        <div class="section-header">
+            <h2>Mis facturas</h2>
+            <button id="addFacturaBtn">+</button>
+        </div>
+        <div id="facturasList" class="workshop-tasks"></div>
+    </div>
+</div>
+
+<!-- TÉCNICOS -->
+<div id="tecnicosPage" class="workshop-page hidden">
+    <div class="inventory-header">
+        <button id="backFromTecnicos" class="back-btn">←</button>
+        <div>
+            <h1>Técnicos</h1>
+            <p>Personal del taller</p>
+        </div>
+    </div>
+    <div class="workshop-section">
+        <div class="section-header">
+            <h2>Mi equipo</h2>
+            <button id="addTechnicianBtn">+</button>
+        </div>
+        <div id="techniciansList" class="workshop-tasks"></div>
+    </div>
+</div>
+
+<!-- MODAL PROVEEDOR -->
+<div id="supplierModal" class="vehicle-modal hidden">
+    <div class="vehicle-modal-card">
+        <div class="vehicle-modal-top">
+            <div class="modal-title-row">
+                <button id="closeSupplierModal" class="modal-back-btn">←</button>
+                <h2>Nuevo proveedor</h2>
+            </div>
+        </div>
+        <div class="vehicle-form">
+            <input type="text" id="supplierName" placeholder="Nombre del proveedor">
+            <input type="text" id="supplierContact" placeholder="Nombre del contacto">
+            <input type="tel" id="supplierPhone" placeholder="Teléfono">
+            <input type="email" id="supplierEmail" placeholder="Correo electrónico">
+            <input type="text" id="supplierAddress" placeholder="Dirección">
+            <input type="text" id="supplierNotes" placeholder="Notas">
+        </div>
+        <button id="saveSupplierBtn">Guardar proveedor</button>
+    </div>
+</div>
+
+<!-- MODAL ORDEN DE COMPRA -->
+<div id="purchaseOrderModal" class="vehicle-modal hidden">
+    <div class="vehicle-modal-card">
+        <div class="vehicle-modal-top">
+            <div class="modal-title-row">
+                <button id="closePurchaseOrderModal" class="modal-back-btn">←</button>
+                <h2>Nueva orden de compra</h2>
+            </div>
+        </div>
+        <div class="vehicle-form">
+            <select id="poSupplierSelect">
+                <option value="">Seleccionar proveedor</option>
+            </select>
+            <div class="custom-status-select">
+                <button type="button" id="poStatusBtn" class="status-select-btn active-status">Borrador</button>
+                <div id="poStatusOptions" class="status-options hidden">
+                    <div class="status-option">Borrador</div>
+                    <div class="status-option">Enviada</div>
+                    <div class="status-option">Recibida</div>
+                    <div class="status-option">Cancelada</div>
+                </div>
+            </div>
+            <input type="hidden" id="poStatus" value="Borrador">
+            <div class="parts-section">
+                <button type="button" id="poItemsToggleBtn" class="parts-toggle">
+                    <span>Productos de la orden</span>
+                    <span class="parts-toggle-arrow" id="poItemsArrow">▸</span>
+                </button>
+                <div id="poItemsBody" class="parts-body">
+                    <div id="poItemsList"></div>
+                    <button type="button" id="addPoItemBtn" class="add-part-btn">+ Agregar producto</button>
+                </div>
+            </div>
+            <textarea id="poNotes" placeholder="Notas u observaciones" rows="2" style="resize:none;width:100%;padding:12px;border-radius:12px;border:1px solid rgba(0,0,0,.1);font-size:.9rem;font-family:inherit;box-sizing:border-box;"></textarea>
+        </div>
+        <button id="savePurchaseOrderBtn">Guardar orden</button>
+    </div>
+</div>
+
+<!-- MODAL RECEPCIÓN -->
+<div id="recepcionModal" class="vehicle-modal hidden">
+    <div class="vehicle-modal-card">
+        <div class="vehicle-modal-top">
+            <div class="modal-title-row">
+                <button id="closeRecepcionModal" class="modal-back-btn">←</button>
+                <h2>Nueva recepción</h2>
+            </div>
+        </div>
+        <div class="vehicle-form">
+            <select id="recepcionPoSelect">
+                <option value="">Vincular a orden de compra (opcional)</option>
+            </select>
+            <div class="parts-section">
+                <button type="button" id="recepcionItemsToggleBtn" class="parts-toggle">
+                    <span>Productos recibidos</span>
+                    <span class="parts-toggle-arrow" id="recepcionItemsArrow">▸</span>
+                </button>
+                <div id="recepcionItemsBody" class="parts-body">
+                    <div id="recepcionItemsList"></div>
+                    <button type="button" id="addRecepcionItemBtn" class="add-part-btn">+ Agregar producto</button>
+                </div>
+            </div>
+            <textarea id="recepcionNotes" placeholder="Notas de recepción" rows="2" style="resize:none;width:100%;padding:12px;border-radius:12px;border:1px solid rgba(0,0,0,.1);font-size:.9rem;font-family:inherit;box-sizing:border-box;"></textarea>
+        </div>
+        <button id="saveRecepcionBtn">Guardar recepción</button>
+    </div>
+</div>
+
+<!-- MODAL FACTURA -->
+<div id="facturaModal" class="vehicle-modal hidden">
+    <div class="vehicle-modal-card">
+        <div class="vehicle-modal-top">
+            <div class="modal-title-row">
+                <button id="closeFacturaModal" class="modal-back-btn">←</button>
+                <h2>Nueva factura</h2>
+            </div>
+        </div>
+        <div class="vehicle-form">
+            <select id="facturaClientSelect">
+                <option value="">Seleccionar cliente (opcional)</option>
+            </select>
+            <select id="facturaVehicleSelect">
+                <option value="">Seleccionar vehículo (opcional)</option>
+            </select>
+            <div class="custom-status-select">
+                <button type="button" id="facturaStatusBtn" class="status-select-btn active-status">Borrador</button>
+                <div id="facturaStatusOptions" class="status-options hidden">
+                    <div class="status-option">Borrador</div>
+                    <div class="status-option">Emitida</div>
+                    <div class="status-option">Pagada</div>
+                    <div class="status-option">Cancelada</div>
+                </div>
+            </div>
+            <input type="hidden" id="facturaStatus" value="Borrador">
+            <div class="parts-section">
+                <button type="button" id="facturaItemsToggleBtn" class="parts-toggle">
+                    <span>Conceptos</span>
+                    <span class="parts-toggle-arrow" id="facturaItemsArrow">▸</span>
+                </button>
+                <div id="facturaItemsBody" class="parts-body">
+                    <div id="facturaItemsList"></div>
+                    <button type="button" id="addFacturaItemBtn" class="add-part-btn">+ Agregar concepto</button>
+                </div>
+            </div>
+            <textarea id="facturaNotes" placeholder="Notas" rows="2" style="resize:none;width:100%;padding:12px;border-radius:12px;border:1px solid rgba(0,0,0,.1);font-size:.9rem;font-family:inherit;box-sizing:border-box;"></textarea>
+        </div>
+        <button id="saveFacturaBtn">Guardar factura</button>
+    </div>
+</div>
+
+<!-- MODAL TÉCNICO -->
+<div id="technicianModal" class="vehicle-modal hidden">
+    <div class="vehicle-modal-card">
+        <div class="vehicle-modal-top">
+            <div class="modal-title-row">
+                <button id="closeTechnicianModal" class="modal-back-btn">←</button>
+                <h2>Nuevo técnico</h2>
+            </div>
+        </div>
+        <div class="vehicle-form">
+            <input type="text" id="technicianName" placeholder="Nombre completo">
+            <input type="tel" id="technicianPhone" placeholder="Teléfono">
+            <input type="email" id="technicianEmail" placeholder="Correo electrónico">
+            <input type="text" id="technicianSpecialty" placeholder="Especialidad (ej. Motor, Frenos, Eléctrico)">
+            <input type="text" id="technicianNotes" placeholder="Notas">
+        </div>
+        <button id="saveTechnicianBtn">Guardar técnico</button>
+    </div>
 </div>
 <!-- SUPABASE -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>

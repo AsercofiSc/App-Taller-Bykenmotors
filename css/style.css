@@ -5393,3 +5393,62 @@ background-image: url('../assets/img/fondo-menu.png');
     color: #0a84ff;
     font-weight: 700;
 }
+/* ========================================
+   MÓDULO COMPRAS — HUB
+======================================== */
+
+.compras-hub-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    padding: 0 0 24px;
+}
+
+.compras-hub-card {
+    background: rgba(255,255,255,.72);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,.6);
+    border-radius: 24px;
+    padding: 22px 18px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    box-shadow: 0 8px 24px rgba(0,0,0,.06);
+    cursor: pointer;
+    transition: transform .18s ease, box-shadow .18s ease;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.compras-hub-card:active {
+    transform: scale(.97);
+    box-shadow: 0 4px 12px rgba(0,0,0,.08);
+}
+
+.compras-hub-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 14px;
+    background: rgba(245,130,13,.12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #f5820d;
+    flex-shrink: 0;
+}
+
+.compras-hub-card h3 {
+    font-size: .95rem;
+    font-weight: 700;
+    color: #111;
+    margin: 0;
+    line-height: 1.2;
+}
+
+.compras-hub-card p {
+    font-size: .78rem;
+    color: #888;
+    margin: 0;
+    line-height: 1.3;
+}
