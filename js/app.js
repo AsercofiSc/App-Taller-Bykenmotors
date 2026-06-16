@@ -33,6 +33,12 @@ let _currentUserId = null;
 let _notifData     = [];   // store persistente de notificaciones
 let _activityData  = [];   // store persistente de actividad
 
+/* ── CONFIGURACIÓN DEL TALLER — edita aquí tu nombre y logo ── */
+const TALLER_CONFIG = {
+    name:    "Mi Taller Mecánico",              // Nombre que aparece en los PDFs
+    tagline: "Servicio automotriz profesional", // Subtítulo (puede quedar vacío "")
+    logoUrl: ""                                 // URL de imagen del logo (puede quedar vacío "")
+};
 /* ── TOAST DE GUARDADO ── */
 let _saveCount = 0;
 let _toastTimer = null;
@@ -567,6 +573,7 @@ navItems[3].addEventListener("click", ()=>{
     setActiveNav(3);
     workshopPage.classList.remove("hidden");
     updateWorkshopStats();
+    refreshTechnicianSelect();
 });
 
 /* =========================
@@ -3150,9 +3157,15 @@ function createPurchaseOrderCard({ supplierName = "", status = "Borrador", notes
             <p><span class="po-status-badge vp-card-status ${_getPoStatusClass(status)}">${status}</span></p>
             <p class="po-items-count">${items.length} producto${items.length !== 1 ? "s" : ""}</p>
             ${notes ? `<p style="font-size:.75rem;color:#888">${notes}</p>` : ""}
-            <p style="font-size:.72rem;color:#aaa;">📅 ${date}</p>
+            <p style="font-size:.72rem;color:#aaa;display:flex;align-items:center;gap:4px;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                ${date}
+            </p>
         </div>
         <div class="task-actions">
+            <button class="po-pdf-btn" title="Descargar PDF">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            </button>
             <button class="po-edit-btn" title="Editar">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13">
                     <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
@@ -3166,6 +3179,8 @@ function createPurchaseOrderCard({ supplierName = "", status = "Borrador", notes
             </button>
         </div>
     `;
+
+    card.querySelector(".po-pdf-btn").addEventListener("click", () => generatePurchaseOrderPDF(card));
 
     card.querySelector(".po-edit-btn").addEventListener("click", () => {
         _editingPoCard = card;
@@ -3267,7 +3282,6 @@ async function loadPurchaseOrders() {
         console.error("Error cargando órdenes:", e);
     }
 }
-
 function refreshPoSelect() {
     const sel = document.getElementById("recepcionPoSelect");
     if (!sel) return;
@@ -3693,13 +3707,21 @@ function createFacturaCard({ client = "", vehicle = "", status = "Borrador", not
     card.innerHTML = `
         <div>
             <strong class="fact-client">${client || "Sin cliente"}</strong>
-            <p class="fact-vehicle">${vehicle ? `🚗 ${vehicle}` : ""}</p>
+            <p class="fact-vehicle" style="display:flex;align-items:center;gap:4px;">
+                ${vehicle ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11"><rect x="1" y="3" width="15" height="13" rx="2"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg> ${vehicle}` : ""}
+            </p>
             <p><span class="fact-status vp-card-status ${_getFacturaStatusClass(status)}">${status}</span></p>
             <p class="fact-total" style="font-weight:700;color:#111;">$${total.toLocaleString("es-MX")}</p>
-            <p style="font-size:.72rem;color:#aaa;">📅 ${date}</p>
+            <p style="font-size:.72rem;color:#aaa;display:flex;align-items:center;gap:4px;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                ${date}
+            </p>
             ${notes ? `<p style="font-size:.75rem;color:#888">${notes}</p>` : ""}
         </div>
         <div class="task-actions">
+            <button class="fact-pdf-btn" title="Descargar PDF">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            </button>
             <button class="fact-edit-btn" title="Editar">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13">
                     <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
@@ -3713,6 +3735,8 @@ function createFacturaCard({ client = "", vehicle = "", status = "Borrador", not
             </button>
         </div>
     `;
+
+    card.querySelector(".fact-pdf-btn").addEventListener("click", () => generateFacturaPDF(card));
 
     card.querySelector(".fact-edit-btn").addEventListener("click", () => {
         _editingFacturaCard = card;
@@ -3897,3 +3921,205 @@ document.addEventListener("click", (e) => {
         facturaStatusOptions?.classList.add("hidden");
 });
 
+/* ========================================
+   GENERACIÓN DE PDF — MÓDULO COMPRAS
+======================================== */
+
+function _pdfHeader(doc) {
+    const pageWidth  = doc.internal.pageSize.getWidth();
+    const leftMargin = 20;
+    let y = 20;
+
+    if (TALLER_CONFIG.logoUrl) {
+        try {
+            doc.addImage(TALLER_CONFIG.logoUrl, "PNG", leftMargin, y - 10, 30, 15);
+        } catch(e) { /* logo inválido, se omite */ }
+    }
+
+    doc.setFontSize(17);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(30, 30, 30);
+    doc.text(TALLER_CONFIG.name || "Taller Mecánico", TALLER_CONFIG.logoUrl ? leftMargin + 34 : leftMargin, y);
+    y += 6;
+
+    if (TALLER_CONFIG.tagline) {
+        doc.setFontSize(9);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(140);
+        doc.text(TALLER_CONFIG.tagline, TALLER_CONFIG.logoUrl ? leftMargin + 34 : leftMargin, y);
+        y += 5;
+    }
+
+    y += 6;
+    doc.setDrawColor(220);
+    doc.setLineWidth(0.5);
+    doc.line(leftMargin, y, pageWidth - leftMargin, y);
+    return y + 10;
+}
+
+function _pdfItemsTable(doc, items, colHeaders, rowMapper, y) {
+    const leftMargin = 20;
+    const pageWidth  = doc.internal.pageSize.getWidth();
+    const cols       = [leftMargin, leftMargin + 95, leftMargin + 128, leftMargin + 165];
+
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(80);
+    colHeaders.forEach((h, i) => doc.text(h, cols[i], y, i > 0 ? { align: "right" } : {}));
+    y += 4;
+    doc.setDrawColor(220);
+    doc.line(leftMargin, y, pageWidth - leftMargin, y);
+    y += 6;
+
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(50);
+    let total = 0;
+
+    if (items.length === 0) {
+        doc.setTextColor(160);
+        doc.text("Sin conceptos registrados", leftMargin, y);
+        y += 7;
+    } else {
+        items.forEach(item => {
+            const { cols: rowCols, subtotal } = rowMapper(item);
+            total += subtotal;
+            rowCols.forEach((val, i) => doc.text(String(val), cols[i], y, i > 0 ? { align: "right" } : {}));
+            y += 7;
+        });
+    }
+
+    y += 3;
+    doc.setDrawColor(210);
+    doc.line(leftMargin, y, pageWidth - leftMargin, y);
+    y += 7;
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10);
+    doc.setTextColor(30);
+    doc.text("Total:", cols[2], y, { align: "right" });
+    doc.text(`$${total.toLocaleString("es-MX")}`, cols[3], y, { align: "right" });
+    return y;
+}
+
+function generatePurchaseOrderPDF(card) {
+    if (!window.jspdf) { alert("PDF no disponible. Recarga la página."); return; }
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+
+    const supplier = card.dataset.supplierName || "Sin proveedor";
+    const status   = card.dataset.status       || "Borrador";
+    const notes    = card.dataset.notes        || "";
+    const items    = JSON.parse(card.dataset.items || "[]");
+    const date     = new Date(card.dataset.createdAt).toLocaleDateString("es-MX");
+    const leftMargin = 20;
+
+    let y = _pdfHeader(doc);
+
+    doc.setFontSize(13);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(30);
+    doc.text("Orden de Compra", leftMargin, y);
+    y += 10;
+
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(80);
+    [
+        ["Proveedor", supplier],
+        ["Estado",    status],
+        ["Fecha",     date]
+    ].forEach(([label, val]) => {
+        doc.setFont("helvetica", "bold");
+        doc.text(`${label}:`, leftMargin, y);
+        doc.setFont("helvetica", "normal");
+        doc.text(val, leftMargin + 28, y);
+        y += 6;
+    });
+    y += 6;
+
+    y = _pdfItemsTable(doc, items,
+        ["Producto", "Cant.", "Precio unit.", "Subtotal"],
+        item => ({
+            cols: [
+                item.name || "",
+                String(item.quantity || 1),
+                `$${(item.unitPrice || 0).toLocaleString("es-MX")}`,
+                `$${((item.quantity || 1) * (item.unitPrice || 0)).toLocaleString("es-MX")}`
+            ],
+            subtotal: (item.quantity || 1) * (item.unitPrice || 0)
+        }),
+        y
+    );
+
+    if (notes) {
+        y += 10;
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(9);
+        doc.setTextColor(100);
+        doc.text(`Notas: ${notes}`, leftMargin, y);
+    }
+
+    doc.save(`OC-${supplier.replace(/\s+/g, "-")}-${date}.pdf`);
+}
+
+function generateFacturaPDF(card) {
+    if (!window.jspdf) { alert("PDF no disponible. Recarga la página."); return; }
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+
+    const client  = card.dataset.client  || "Sin cliente";
+    const vehicle = card.dataset.vehicle || "Sin vehículo";
+    const status  = card.dataset.status  || "Borrador";
+    const notes   = card.dataset.notes   || "";
+    const items   = JSON.parse(card.dataset.items || "[]");
+    const date    = new Date(card.dataset.createdAt || Date.now()).toLocaleDateString("es-MX");
+    const leftMargin = 20;
+
+    let y = _pdfHeader(doc);
+
+    doc.setFontSize(13);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(30);
+    doc.text("Factura de Servicio", leftMargin, y);
+    y += 10;
+
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(80);
+    [
+        ["Cliente",   client],
+        ["Vehículo",  vehicle],
+        ["Estado",    status],
+        ["Fecha",     date]
+    ].forEach(([label, val]) => {
+        doc.setFont("helvetica", "bold");
+        doc.text(`${label}:`, leftMargin, y);
+        doc.setFont("helvetica", "normal");
+        doc.text(val, leftMargin + 28, y);
+        y += 6;
+    });
+    y += 6;
+
+    y = _pdfItemsTable(doc, items,
+        ["Concepto", "Cant.", "Precio unit.", "Subtotal"],
+        item => ({
+            cols: [
+                item.description || "",
+                String(item.quantity || 1),
+                `$${(item.unitPrice || 0).toLocaleString("es-MX")}`,
+                `$${((item.quantity || 1) * (item.unitPrice || 0)).toLocaleString("es-MX")}`
+            ],
+            subtotal: (item.quantity || 1) * (item.unitPrice || 0)
+        }),
+        y
+    );
+
+    if (notes) {
+        y += 10;
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(9);
+        doc.setTextColor(100);
+        doc.text(`Notas: ${notes}`, leftMargin, y);
+    }
+
+    doc.save(`Factura-${client.replace(/\s+/g, "-")}-${date}.pdf`);
+}
