@@ -505,13 +505,24 @@ function showVehicleHistory(card){
 
     const history = JSON.parse(card.dataset.history || "[]");
     const name    = card.dataset.vehicleName || "Vehículo";
+    const uid     = card.dataset.uid || "";
+    const owner   = card.dataset.owner || "";
 
     const sheet = document.createElement("div");
     sheet.className = "history-sheet";
+    sheet.dataset.owner = owner;
     sheet.innerHTML = `
         <div class="history-sheet-header">
             <span class="history-sheet-title">Historial — ${name}</span>
             <button class="history-sheet-close">✕</button>
+        </div>
+        <div class="history-photos-section">
+            <div class="history-photos-header">
+                <span>Fotos</span>
+                <button type="button" class="history-photos-add-btn">+ Agregar foto</button>
+            </div>
+            <input type="file" accept="image/*" class="history-photo-input" hidden>
+            <div class="history-photos-grid"><p class="history-photos-loading">Cargando fotos...</p></div>
         </div>
         <div class="history-sheet-body">
             ${history.length === 0
@@ -540,6 +551,208 @@ function showVehicleHistory(card){
             }
         });
     }, 100);
+
+    const fileInput = sheet.querySelector(".history-photo-input");
+    sheet.querySelector(".history-photos-add-btn").addEventListener("click", () => {
+        if(!uid){ alert("No se pudo identificar el vehículo."); return; }
+        fileInput.click();
+    });
+    fileInput.addEventListener("change", async () => {
+        const file = fileInput.files[0];
+        if(!file) return;
+        const ok = await uploadVehiclePhoto(uid, file, sheet, "general");
+        if(ok) renderVehiclePhotos(uid, sheet);
+        fileInput.value = "";
+    });
+
+    renderVehiclePhotos(uid, sheet);
+}
+
+function findVehicleCardByName(name){
+    const search = (name || "").toLowerCase().trim();
+    if(!search) return null;
+    let exact = null, fuzzy = null;
+    document.querySelectorAll(".vp-card").forEach(card => {
+        const cardName = (card.dataset.vehicleName || "").toLowerCase().trim();
+        if(!cardName) return;
+        if(cardName === search) exact = card;
+        else if(!fuzzy && (cardName.includes(search) || search.includes(cardName))) fuzzy = card;
+    });
+    return exact || fuzzy;
+}
+
+function showTaskEvidence(task){
+    const existing = document.querySelector(".evidence-sheet");
+    if(existing){ existing.remove(); return; }
+
+    const vehicleCard = findVehicleCardByName(task.dataset.vehicle || "");
+    if(!vehicleCard){
+        alert("No se encontró el vehículo vinculado a esta tarea.");
+        return;
+    }
+    const uid       = vehicleCard.dataset.uid || "";
+    const taskTitle = task.dataset.title || "";
+
+    const sheet = document.createElement("div");
+    sheet.className = "history-sheet evidence-sheet";
+    sheet.innerHTML = `
+        <div class="history-sheet-header">
+            <span class="history-sheet-title">Evidencia — ${taskTitle}</span>
+            <button class="history-sheet-close">✕</button>
+        </div>
+        <div class="history-photos-section" style="border-bottom:none;margin-bottom:0;padding-bottom:0;">
+            <div class="history-photos-header">
+                <span>Fotos del trabajo</span>
+                <button type="button" class="history-photos-add-btn">+ Agregar foto</button>
+            </div>
+            <input type="file" accept="image/*" class="history-photo-input" hidden>
+            <div class="history-photos-grid"><p class="history-photos-loading">Cargando fotos...</p></div>
+        </div>
+    `;
+
+    document.body.appendChild(sheet);
+    sheet.querySelector(".history-sheet-close").addEventListener("click", () => sheet.remove());
+    setTimeout(()=>{
+        document.addEventListener("click", function close(e){
+            if(!e.target.closest(".evidence-sheet") && !e.target.closest(".task-evidence-btn")){
+                sheet.remove();
+                document.removeEventListener("click", close);
+            }
+        });
+    }, 100);
+
+    const fileInput = sheet.querySelector(".history-photo-input");
+    sheet.querySelector(".history-photos-add-btn").addEventListener("click", () => {
+        if(!uid){ alert("Guarda el vehículo primero."); return; }
+        fileInput.click();
+    });
+    fileInput.addEventListener("change", async () => {
+        const file = fileInput.files[0];
+        if(!file) return;
+        const ok = await uploadVehiclePhoto(uid, file, sheet, "evidencia", taskTitle);
+        if(ok){
+            renderVehiclePhotos(uid, sheet, "evidencia", taskTitle);
+            updateTaskEvidenceCount(task, uid);
+        }
+        fileInput.value = "";
+    });
+
+    renderVehiclePhotos(uid, sheet, "evidencia", taskTitle);
+}
+
+async function updateTaskEvidenceCount(task, uid){
+    const btn = task.querySelector(".task-evidence-btn");
+    if(!btn || !uid) return;
+    const { count } = await _supabase
+        .from("vehicle_photos")
+        .select("id", { count: "exact", head: true })
+        .eq("vehicle_uid", uid)
+        .eq("kind", "evidencia")
+        .eq("caption", task.dataset.title || "");
+    btn.textContent = count > 0 ? `📷 ${count}` : "📷";
+}
+
+async function uploadVehiclePhoto(vehicleUid, file, sheet, kind = "general", caption = ""){
+    const grid = sheet.querySelector(".history-photos-grid");
+    const status = document.createElement("p");
+    status.className = "history-photos-loading";
+    status.textContent = "Subiendo foto...";
+    grid.prepend(status);
+
+    try {
+        const { data: { session } } = await _supabase.auth.getSession();
+        if(!session) throw new Error("Sin sesión activa");
+
+        const ext  = (file.name.split(".").pop() || "jpg").toLowerCase();
+        const path = `${session.user.id}/${vehicleUid}/${Date.now()}.${ext}`;
+
+        const { error: uploadError } = await _supabase.storage.from("vehicle-photos").upload(path, file);
+        if(uploadError) throw uploadError;
+
+        const { data: urlData } = _supabase.storage.from("vehicle-photos").getPublicUrl(path);
+
+        const { error: insertError } = await _supabase.from("vehicle_photos").insert({
+            user_id: session.user.id,
+            vehicle_uid: vehicleUid,
+            url: urlData.publicUrl,
+            path,
+            kind,
+            caption
+        });
+        if(insertError) throw insertError;
+
+        status.remove();
+        return true;
+    } catch(err){
+        console.error("Error al subir foto:", err);
+        status.textContent = "Error al subir la foto";
+        setTimeout(()=>status.remove(), 2500);
+        return false;
+    }
+}
+
+async function renderVehiclePhotos(vehicleUid, sheet, kindFilter = null, captionFilter = null){
+    const grid = sheet.querySelector(".history-photos-grid");
+    if(!vehicleUid){
+        grid.innerHTML = `<p class="history-empty">Vehículo sin identificador, guarda y vuelve a abrir</p>`;
+        return;
+    }
+    grid.innerHTML = `<p class="history-photos-loading">Cargando fotos...</p>`;
+
+    let query = _supabase.from("vehicle_photos").select("*").eq("vehicle_uid", vehicleUid);
+    if(kindFilter)    query = query.eq("kind", kindFilter);
+    if(captionFilter) query = query.eq("caption", captionFilter);
+
+    const { data, error } = await query.order("created_at", { ascending: false });
+
+    if(error){
+        grid.innerHTML = `<p class="history-empty">No se pudieron cargar las fotos</p>`;
+        return;
+    }
+    if(!data || data.length === 0){
+        grid.innerHTML = `<p class="history-empty">Sin fotos aún</p>`;
+        return;
+    }
+
+    grid.innerHTML = data.map(p => `
+        <div class="history-photo-card" data-photo-id="${p.id}" data-path="${p.path}" data-url="${p.url}">
+            <img src="${p.url}" alt="Foto del vehículo" loading="lazy">
+            ${p.caption ? `<span class="history-photo-caption">${p.caption}</span>` : ""}
+            <div class="history-photo-actions">
+                <button class="history-photo-wa-btn" title="Enviar por WhatsApp">💬</button>
+                <button class="history-photo-del-btn" title="Eliminar">✕</button>
+            </div>
+        </div>
+    `).join("");
+
+    grid.querySelectorAll(".history-photo-wa-btn").forEach(btn => {
+        btn.addEventListener("click", (e) => {
+            const photoCard = e.target.closest(".history-photo-card");
+            sendPhotoWhatsApp(photoCard.dataset.url, sheet.dataset.owner || "");
+        });
+    });
+
+    grid.querySelectorAll(".history-photo-del-btn").forEach(btn => {
+        btn.addEventListener("click", async (e) => {
+            const photoCard = e.target.closest(".history-photo-card");
+            if(!confirm("¿Eliminar esta foto?")) return;
+            await _supabase.storage.from("vehicle-photos").remove([photoCard.dataset.path]);
+            await _supabase.from("vehicle_photos").delete().eq("id", photoCard.dataset.photoId);
+            photoCard.remove();
+        });
+    });
+}
+
+function sendPhotoWhatsApp(photoUrl, ownerName){
+    const ownerCard = [...document.querySelectorAll(".cp-card")]
+        .find(c => (c.dataset.name||"").toLowerCase() === (ownerName||"").toLowerCase());
+    const phone = ownerCard?.dataset.phone || "";
+    if(!phone){
+        alert("Este cliente no tiene teléfono registrado.");
+        return;
+    }
+    const msg = encodeURIComponent(`Hola, le compartimos una foto de su vehículo: ${photoUrl}`);
+    window.open(`https://wa.me/${phone.replace(/\D/g,'')}?text=${msg}`);
 }
 
 /* =========================
@@ -714,8 +927,7 @@ saveVehicleBtn.addEventListener("click", ()=>{
    CREATE VEHICLE CARD
 ========================= */
 
-function createVehicleCard(name, target, year, plate, color, owner, date, statusLabel, statusClass, notes = ""){
-
+function createVehicleCard(name, target, year, plate, color, owner, date, statusLabel, statusClass, notes = "", uid = null){
     const card = document.createElement("div");
     card.className           = "vp-card";
     card.dataset.vehicleName = name;
@@ -726,6 +938,7 @@ function createVehicleCard(name, target, year, plate, color, owner, date, status
     card.dataset.notes       = notes  || "";
     card.dataset.date        = date   || "";
     card.dataset.history = "[]";
+    card.dataset.uid = uid || (window.crypto?.randomUUID ? crypto.randomUUID() : ("uid_" + Date.now() + "_" + Math.random().toString(36).slice(2)));
 
     card.innerHTML = `
         <div class="vp-card-left">
@@ -1331,6 +1544,9 @@ saveWorkshopTaskBtn.addEventListener("click", ()=>{
         updateTaskStyle(sel, status);
         updateWorkshopStats();
 
+        const vCardEdit = findVehicleCardByName(vehicle);
+        if (vCardEdit) updateTaskEvidenceCount(task, vCardEdit.dataset.uid || "");
+
         // ── Si se edita y se marca Completado → sincronizar vehículo ──
        if(status === "Completado"){
     syncVehicleToReady(vehicle, title);
@@ -1395,6 +1611,7 @@ function createWorkshopTask(title, vehicle, delivery, status, parts = [], techni
                 <option value="Pendiente"  ${status === "Pendiente"  ? "selected" : ""}>Pendiente</option>
                 <option value="Completado" ${status === "Completado" ? "selected" : ""}>Completado</option>
             </select>
+            <button class="task-evidence-btn" title="Evidencia fotográfica">📷</button>
             <button class="task-edit-btn" title="Editar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
             <button class="delete-task" title="Eliminar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
         </div>
@@ -1454,8 +1671,16 @@ function createWorkshopTask(title, vehicle, delivery, status, parts = [], techni
     saveWorkshopTasks(); // <-- AÑADIR AQUÍ
 });
 
+    task.querySelector(".task-evidence-btn").addEventListener("click", (e) => {
+        e.stopPropagation();
+        showTaskEvidence(task);
+    });
+
     workshopTasks.appendChild(task);
     updateWorkshopStats();
+
+    const linkedVehicle = findVehicleCardByName(vehicle);
+    if(linkedVehicle) updateTaskEvidenceCount(task, linkedVehicle.dataset.uid || "");
 }
 
 /* ── Cargar vehículos en el select del modal ── */
@@ -2440,6 +2665,7 @@ function saveVehicles(){
                 color:           card.dataset.color       || "",
                 notes:           card.dataset.notes       || "",
                 date:            card.dataset.date        || "",
+                uid:             card.dataset.uid          || "",
                 lastService:     card.dataset.lastService     || "",
                 lastServiceDate: card.dataset.lastServiceDate || "",
                 history: JSON.parse(card.dataset.history || "[]"),
@@ -2524,7 +2750,8 @@ async function loadVehicles(){
         const card = createVehicleCard(
             v.name, target, v.year, v.plate,
             v.color, v.owner, v.date,
-            v.statusLabel, v.statusClass, v.notes
+            v.statusLabel, v.statusClass, v.notes,
+            v.uid
         );
         if(card){
             // Restaurar historial y último servicio desde Supabase
@@ -3135,7 +3362,7 @@ function _getPoStatusClass(status) {
     return "status-ingresado";
 }
 
-function createPurchaseOrderCard({ supplierName = "", status = "Borrador", notes = "", items = [], createdAt = "" }) {
+function createPurchaseOrderCard({ supplierName = "", status = "Borrador", notes = "", items = [], createdAt = "", poUid = null }) {
     const list = document.getElementById("ordenesList");
     if (!list) return;
 
@@ -3150,6 +3377,7 @@ function createPurchaseOrderCard({ supplierName = "", status = "Borrador", notes
     card.dataset.notes        = notes;
     card.dataset.items        = JSON.stringify(items);
     card.dataset.createdAt    = createdAt || new Date().toISOString();
+    card.dataset.poUid        = poUid || (window.crypto?.randomUUID ? crypto.randomUUID() : ("po_" + Date.now() + "_" + Math.random().toString(36).slice(2)));
 
     card.innerHTML = `
         <div>
@@ -3228,7 +3456,7 @@ async function savePurchaseOrders() {
         for (const card of cards) {
             const { data: inserted, error } = await _supabase
                 .from("purchase_orders")
-                .insert({ user_id: uid, supplier_name: card.dataset.supplierName || "", status: card.dataset.status || "Borrador", notes: card.dataset.notes || "" })
+                .insert({ user_id: uid, supplier_name: card.dataset.supplierName || "", status: card.dataset.status || "Borrador", notes: card.dataset.notes || "", po_uid: card.dataset.poUid || "" })
                 .select();
             if (error) throw error;
 
@@ -3275,7 +3503,8 @@ async function loadPurchaseOrders() {
                 status:    order.status,
                 notes:     order.notes,
                 items:     orderItems,
-                createdAt: order.created_at
+                createdAt: order.created_at,
+                poUid:     order.po_uid || ""
             });
         });
     } catch (e) {
@@ -3287,14 +3516,46 @@ function refreshPoSelect() {
     if (!sel) return;
     const current = sel.value;
     sel.innerHTML = `<option value="">Vincular a orden de compra (opcional)</option>`;
-    document.querySelectorAll("#ordenesList .workshop-task").forEach((card, idx) => {
+    document.querySelectorAll("#ordenesList .workshop-task").forEach(card => {
         const opt = document.createElement("option");
         const supplier = card.dataset.supplierName || "Sin proveedor";
-        opt.value       = supplier + "_" + idx;
+        opt.value       = card.dataset.poUid || "";
         opt.textContent = `${supplier} — ${card.dataset.status}`;
         sel.appendChild(opt);
     });
     if (current) sel.value = current;
+}
+
+document.getElementById("recepcionPoSelect")?.addEventListener("change", () => {
+    const poUid = document.getElementById("recepcionPoSelect").value;
+    if (!poUid) return;
+    const poCard = [...document.querySelectorAll("#ordenesList .workshop-task")]
+        .find(c => c.dataset.poUid === poUid);
+    if (!poCard) return;
+
+    const items = JSON.parse(poCard.dataset.items || "[]");
+    if (items.length === 0) return;
+
+    const itemsList = document.getElementById("recepcionItemsList");
+    if (itemsList.children.length > 0 && !confirm("Esto reemplazará los productos capturados con los de la orden seleccionada. ¿Continuar?")) return;
+
+    itemsList.innerHTML = "";
+    items.forEach(i => itemsList.appendChild(buildRecepcionItemRow(i.name, i.quantity)));
+    document.getElementById("recepcionItemsBody")?.classList.add("open");
+    document.getElementById("recepcionItemsArrow")?.classList.add("open");
+});
+
+function markPurchaseOrderReceived(poUid) {
+    const poCard = [...document.querySelectorAll("#ordenesList .workshop-task")]
+        .find(c => c.dataset.poUid === poUid);
+    if (!poCard || poCard.dataset.status === "Recibida") return;
+    poCard.dataset.status = "Recibida";
+    const badge = poCard.querySelector(".po-status-badge");
+    if (badge) {
+        badge.textContent = "Recibida";
+        badge.className   = `po-status-badge vp-card-status ${_getPoStatusClass("Recibida")}`;
+    }
+    savePurchaseOrders();
 }
 
 /* ========================================
@@ -3376,8 +3637,10 @@ document.getElementById("closeRecepcionModal")?.addEventListener("click", () => 
 });
 
 document.getElementById("saveRecepcionBtn")?.addEventListener("click", () => {
-    const poRef = document.getElementById("recepcionPoSelect").value.trim();
-    const notes = document.getElementById("recepcionNotes").value.trim();
+    const poSelectEl = document.getElementById("recepcionPoSelect");
+    const poUid      = poSelectEl.value;
+    const poRef      = poUid ? poSelectEl.options[poSelectEl.selectedIndex].textContent : "";
+    const notes      = document.getElementById("recepcionNotes").value.trim();
 
     const items = [];
     document.querySelectorAll("#recepcionItemsList .part-row").forEach(row => {
@@ -3400,6 +3663,7 @@ document.getElementById("saveRecepcionBtn")?.addEventListener("click", () => {
 
     if (_editingRecepcionCard) {
         const card = _editingRecepcionCard;
+        card.dataset.poUid = poUid;
         card.dataset.poRef = poRef;
         card.dataset.notes = notes;
         card.dataset.items = JSON.stringify(items);
@@ -3408,8 +3672,10 @@ document.getElementById("saveRecepcionBtn")?.addEventListener("click", () => {
         _editingRecepcionCard = null;
         document.querySelector("#recepcionModal h2").textContent = "Nueva recepción";
     } else {
-        createRecepcionCard({ poRef, notes, items });
+        createRecepcionCard({ poUid, poRef, notes, items });
     }
+
+    if (poUid) markPurchaseOrderReceived(poUid);
 
     document.getElementById("recepcionModal").classList.add("hidden");
     document.getElementById("recepcionItemsList").innerHTML = "";
@@ -3417,7 +3683,7 @@ document.getElementById("saveRecepcionBtn")?.addEventListener("click", () => {
     saveInventory();
 });
 
-function createRecepcionCard({ poRef = "", notes = "", items = [], createdAt = "" }) {
+function createRecepcionCard({ poUid = "", poRef = "", notes = "", items = [], createdAt = "" }) {
     const list = document.getElementById("recepcionesList");
     if (!list) return;
 
@@ -3427,6 +3693,7 @@ function createRecepcionCard({ poRef = "", notes = "", items = [], createdAt = "
 
     const card = document.createElement("div");
     card.className      = "workshop-task";
+    card.dataset.poUid  = poUid;
     card.dataset.poRef  = poRef;
     card.dataset.notes  = notes;
     card.dataset.items  = JSON.stringify(items);
@@ -3459,8 +3726,7 @@ function createRecepcionCard({ poRef = "", notes = "", items = [], createdAt = "
         _editingRecepcionCard = card;
         document.querySelector("#recepcionModal h2").textContent = "Editar recepción";
         refreshPoSelect();
-        document.getElementById("recepcionPoSelect").value = card.dataset.poRef || "";
-        document.getElementById("recepcionNotes").value    = card.dataset.notes || "";
+        document.getElementById("recepcionPoSelect").value = card.dataset.poUid || "";        document.getElementById("recepcionNotes").value    = card.dataset.notes || "";
         const itemsData = JSON.parse(card.dataset.items || "[]");
         const itemsList = document.getElementById("recepcionItemsList");
         itemsList.innerHTML = "";
@@ -3497,7 +3763,7 @@ async function saveRecepciones() {
         for (const card of cards) {
             const { data: inserted, error } = await _supabase
                 .from("receptions")
-                .insert({ user_id: uid, po_reference: card.dataset.poRef || "", notes: card.dataset.notes || "" })
+                .insert({ user_id: uid, po_reference: card.dataset.poRef || "", po_uid: card.dataset.poUid || "", notes: card.dataset.notes || "" })
                 .select();
             if (error) throw error;
 
@@ -3538,7 +3804,7 @@ async function loadRecepciones() {
             const recItems = (items || [])
                 .filter(i => i.reception_id === rec.id)
                 .map(i => ({ name: i.name, quantity: i.quantity_received }));
-createRecepcionCard({ poRef: rec.po_reference || "", notes: rec.notes, items: recItems, createdAt: rec.created_at });        });
+    createRecepcionCard({ poUid: rec.po_uid || "", poRef: rec.po_reference || "", notes: rec.notes, items: recItems, createdAt: rec.created_at });        });
     } catch (e) {
         console.error("Error cargando recepciones:", e);
     }
