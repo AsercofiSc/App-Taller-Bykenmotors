@@ -13,7 +13,7 @@
 ============================================= */
 
 // Cambiamos a v2 para forzar al móvil a borrar el caché viejo e instalar el nuevo
-const NOMBRE_CACHE = "taller-app-v34";
+const NOMBRE_CACHE = "taller-app-v35";
 
 const ARCHIVOS = [
   "./index.html",

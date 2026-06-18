@@ -4040,7 +4040,17 @@ background-image: url('../assets/img/fondo-menu.png');
 /* ========================================
    INVENTORY NAV BADGE
 ======================================== */
-
+.nav-compras-dot {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #f5820d;
+    border: 1.5px solid white;
+    pointer-events: none;
+}
 .nav-low-stock-dot {
     display: inline-block;
     width: 7px;

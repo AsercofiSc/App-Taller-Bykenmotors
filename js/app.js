@@ -811,9 +811,39 @@ function goBackToDashboard(){
     updateDashboardStats();
     updateDashVehicles();
     updateDashLowStock();
+    updateComprasHubStats();
+    updateComprasNavDot();
 }
 
 document.getElementById("backDashboard").addEventListener("click", goBackToDashboard);
+
+function updateComprasNavDot(){
+    const nav = navItems[4];
+    if(!nav) return;
+
+    const hayOrdenPendiente = [...document.querySelectorAll("#ordenesList .workshop-task")]
+        .some(c => c.dataset.status !== "Recibida" && c.dataset.status !== "Cancelada");
+
+    let pendingFacturas = 0;
+    document.querySelectorAll("#facturasList .workshop-task").forEach(c => {
+        if(c.dataset.status === "Pagada" || c.dataset.status === "Cancelada") return;
+        const items = JSON.parse(c.dataset.items || "[]");
+        pendingFacturas += items.reduce((s, i) => s + (i.quantity || 1) * (i.unitPrice || 0), 0);
+    });
+
+    const dot = nav.querySelector(".nav-compras-dot");
+    if(hayOrdenPendiente || pendingFacturas > 0){
+        nav.classList.add("compras-alert");
+        if(!dot){
+            const d = document.createElement("span");
+            d.className = "nav-compras-dot";
+            nav.appendChild(d);
+        }
+    } else {
+        nav.classList.remove("compras-alert");
+        if(dot) dot.remove();
+    }
+}
 document.getElementById("backFromClients").addEventListener("click", goBackToDashboard);
 document.getElementById("backFromInventory").addEventListener("click", goBackToDashboard);
 document.getElementById("backFromWorkshop").addEventListener("click", goBackToDashboard);
@@ -2536,6 +2566,8 @@ function addDeliverButton(card){
     btn.textContent = "→ Entregar";
 
     btn.addEventListener("click", ()=>{
+        const vName = card.dataset.vehicleName || "";
+
         // Actualizar estado en la tarjeta
         const statusEl = card.querySelector(".vp-card-status");
         if(statusEl){
@@ -2549,6 +2581,7 @@ function addDeliverButton(card){
         addActivity("vehicle", "Vehículo entregado", vName);
         avisar(`🏁 ${vName} fue entregado al cliente`);
         refreshClientVehicleStatuses();
+        updateCounts();
 
         // Email al cliente: vehículo entregado
         const oCard = [...document.querySelectorAll(".cp-card")]
@@ -2559,10 +2592,6 @@ function addDeliverButton(card){
 
         // Sincronizar cliente a "Próximos a servicio"
         syncClientToNextService(card);
-
-        const vName = card.dataset.vehicleName || "";
-        addNotification("vehicle", "Entregado", `${vName} entregado al cliente`);
-        addActivity("vehicle", "Vehículo entregado", vName);
     });
 
     card.querySelector(".vp-card-right").prepend(btn);
@@ -2826,28 +2855,30 @@ async function inicializarEstructurasDeUsuario() {
     limpiarDOM();
     updateDashboardHeader();
 
-    // Ejecuta las descargas una tras otra esperando que terminen
-    await loadVehicles();
-    await loadClients();
-    await loadInventory();
-    await loadWorkshopTasks();
-    await loadSuppliers();
-    await loadTechnicians();
-    await loadPurchaseOrders();
-    await loadRecepciones();
-    await loadInvoices();
-    await loadTallerConfig();
+    try {
+        await loadVehicles();
+        await loadClients();
+        await loadInventory();
+        await loadWorkshopTasks();
+        await loadSuppliers();
+        await loadTechnicians();
+        await loadPurchaseOrders();
+        await loadRecepciones();
+        await loadInvoices();
+        await loadTallerConfig();
+    } catch(e) {
+        console.error("Error durante la carga inicial:", e);
+    } finally {
+        _isLoading = false;
+        initEmptyStates();
+        updateDashboardStats();
+        updateDashVehicles();
+        updateDashLowStock();
 
-    _isLoading = false;
-    initEmptyStates();
-    updateDashboardStats();
-    updateDashVehicles();
-    updateDashLowStock();
-
-    // Restaurar notificaciones y actividad desde localStorage
-    if(_currentUserId){
-        loadPersistedNotifications(_currentUserId);
-        loadPersistedActivity(_currentUserId);
+        if(_currentUserId){
+            loadPersistedNotifications(_currentUserId);
+            loadPersistedActivity(_currentUserId);
+        }
     }
 }
 
