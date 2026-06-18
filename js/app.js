@@ -260,6 +260,7 @@ loginForm.addEventListener("submit", async (e) => {
         // NUEVO: Descarga la información de Supabase cuando el usuario inicia sesión
         await inicializarEstructurasDeUsuario();
         solicitarPermisoNotificaciones();
+        setTimeout(() => avisarPendientes(), 4000);
     }
 });
 /* =========================
@@ -814,7 +815,19 @@ function goBackToDashboard(){
     updateComprasHubStats();
     updateComprasNavDot();
 }
-
+document.getElementById("logoutBtn")?.addEventListener("click", async () => {
+    if(!confirm("¿Cerrar sesión?")) return;
+    await _supabase.auth.signOut();
+    _currentUserId = null;
+    _notifData     = [];
+    _activityData  = [];
+    limpiarDOM();
+    initEmptyStates();
+    document.querySelector(".login-page").style.display = "";
+    dashboard.classList.add("hidden");
+    document.querySelector('.login-form input[type="email"]').value    = "";
+    document.querySelector('.login-form input[type="password"]').value = "";
+});
 document.getElementById("backDashboard").addEventListener("click", goBackToDashboard);
 
 function updateComprasNavDot(){
@@ -1363,7 +1376,16 @@ saveClientBtn.addEventListener("click", ()=>{
         card.dataset.email   = email;
         card.dataset.vehicle = vehicle;
         card.dataset.source  = source;
-        card.innerHTML = renderClientCardHTML(name, phone, email, vehicle, source);
+        card.dataset.name    = name;
+        card.dataset.phone   = phone;
+        card.dataset.email   = email;
+        card.dataset.vehicle = vehicle;
+        card.dataset.source  = source;
+        card.innerHTML = renderClientCardHTML(
+            name, phone, email, vehicle, source,
+            card.dataset.lastService     || "",
+            card.dataset.lastServiceDate || ""
+        );
         attachClientCardListeners(card);
         targets[section].appendChild(card);
         editingClientCard = null;
@@ -1560,14 +1582,33 @@ saveWorkshopTaskBtn.addEventListener("click", ()=>{
             displayDate = d.toLocaleDateString("es-MX");
         }
 
-        task.dataset.title    = title;
-        task.dataset.vehicle  = vehicle;
-        task.dataset.delivery = delivery;
-        task.dataset.status   = status;
+        // Calcular piezas nuevas vs viejas y descontar diferencia
+        const oldParts = JSON.parse(task.dataset.parts || "[]");
+        parts.forEach(newPart => {
+            const old = oldParts.find(p => p.name.toLowerCase() === newPart.name.toLowerCase());
+            const oldQty = old ? (old.qty || 0) : 0;
+            const diff   = (newPart.qty || 1) - oldQty;
+            if(diff > 0) deductInventoryStock(newPart.name, diff);
+        });
 
-        task.querySelector("strong").textContent  = title;
-        task.querySelectorAll("p")[0].textContent = vehicle;
-        task.querySelectorAll("p")[1].textContent = `📅 Entrega: ${displayDate}`;
+        task.dataset.title          = title;
+        task.dataset.vehicle        = vehicle;
+        task.dataset.delivery       = delivery;
+        task.dataset.status         = status;
+        task.dataset.technicianName = technicianName;
+        task.dataset.parts          = JSON.stringify(parts);
+
+        // Actualizar bloque de info sin destruir listeners de los botones
+        const infoDiv = task.children[0];
+        if(infoDiv){
+            infoDiv.innerHTML = `
+                <strong>${title}</strong>
+                <p>${vehicle}</p>
+                <p>📅 Entrega: ${displayDate}</p>
+                ${technicianName ? `<p style="font-size:.78rem;color:#f5820d;font-weight:600;">👨‍🔧 ${technicianName}</p>` : ""}
+                ${parts.length > 0 ? `<div class="parts-saved-list">${parts.map(p => `<span class="part-saved-row">${p.name} × ${p.qty}</span>`).join("")}</div>` : ""}
+            `;
+        }
 
         const sel = task.querySelector(".task-select");
         sel.value = status;
@@ -1838,6 +1879,7 @@ function requestNotifPermission(){
 requestNotifPermission();
 
 function fireNotification(productName, stock){
+    if(_isLoading) return;
     if("Notification" in window && Notification.permission === "granted"){
         new Notification("⚠️ Stock bajo — Taller App", {
             body: `"${productName}" tiene solo ${stock} unidades.`
@@ -2896,6 +2938,7 @@ async function inicializarEstructurasDeUsuario() {
             dashboard.classList.remove("hidden");
             await inicializarEstructurasDeUsuario();
             solicitarPermisoNotificaciones();
+            setTimeout(() => avisarPendientes(), 4000);
         }
         // Marcar datos como listos (con o sin sesión)
         window._loaderDataDone = true;
@@ -3983,14 +4026,30 @@ document.getElementById("saveFacturaBtn")?.addEventListener("click", () => {
         card.dataset.status  = status;
         card.dataset.notes   = notes;
         card.dataset.items   = JSON.stringify(items);
+        const oldStatus = card.dataset.status;
         card.querySelector(".fact-client").textContent  = client  || "Sin cliente";
         card.querySelector(".fact-vehicle").textContent = vehicle ? `🚗 ${vehicle}` : "";
         card.querySelector(".fact-status").className    = `fact-status vp-card-status ${_getFacturaStatusClass(status)}`;
         card.querySelector(".fact-status").textContent  = status;
         card.querySelector(".fact-total").textContent   = `$${newTotal.toLocaleString("es-MX")}`;
+
+        if(oldStatus !== "Pagada" && status === "Pagada"){
+            const total = items.reduce((s, i) => s + (i.quantity || 1) * (i.unitPrice || 0), 0);
+            addNotification("task", "💰 Factura pagada", `${client || "Cliente"} — $${total.toLocaleString("es-MX")}`);
+            addActivity("task", "Factura cobrada", `${client || "Sin cliente"} · $${total.toLocaleString("es-MX")}`);
+            avisar(`💰 Factura pagada: ${client || "Cliente"} — $${total.toLocaleString("es-MX")}`, "Taller App");
+        }
+
         _editingFacturaCard = null;
         document.querySelector("#facturaModal h2").textContent = "Nueva factura";
     } else {
+        // Descontar del inventario los items que coincidan con productos existentes
+        items.forEach(item => {
+            if(!item.description) return;
+            const match = [...document.querySelectorAll(".inventory-card")]
+                .find(c => (c.dataset.fullName || "").toLowerCase() === item.description.toLowerCase());
+            if(match) deductInventoryStock(item.description, item.quantity || 1);
+        });
         createFacturaCard({ client, vehicle, status, notes, items });
     }
 
@@ -4208,6 +4267,51 @@ function updateComprasHubStats() {
     if (statFacturas) {
         statFacturas.textContent = pendingTotal > 0 ? `$${pendingTotal.toLocaleString("es-MX")} por cobrar` : "Sin pendientes";
     }
+
+    // Resumen pendientes estilo notificación
+    const resumen = document.getElementById("comprasPendientesResumen");
+    if (!resumen) return;
+    resumen.innerHTML = "";
+
+    if (poPending > 0) {
+        const row = document.createElement("div");
+        row.className = "notification-card";
+        row.style.cssText = "display:flex;align-items:center;gap:12px;margin:0;cursor:pointer;";
+        row.innerHTML = `
+            <div class="card-icon-minimal">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            </div>
+            <div style="flex:1;">
+                <h3 style="margin:0;font-size:.85rem;">Órdenes pendientes</h3>
+                <p style="margin:0;font-size:.78rem;color:#888;">${poPending} orden${poPending !== 1 ? "es" : ""} sin recibir</p>
+            </div>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><polyline points="9 18 15 12 9 6"/></svg>
+        `;
+        row.addEventListener("click", () => {
+            document.getElementById("goOrdenesCompra")?.click();
+        });
+        resumen.appendChild(row);
+    }
+
+    if (pendingTotal > 0) {
+        const row2 = document.createElement("div");
+        row2.className = "notification-card";
+        row2.style.cssText = "display:flex;align-items:center;gap:12px;margin:0;cursor:pointer;";
+        row2.innerHTML = `
+            <div class="card-icon-minimal">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="2"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="11" y2="16"/></svg>
+            </div>
+            <div style="flex:1;">
+                <h3 style="margin:0;font-size:.85rem;">Por cobrar</h3>
+                <p style="margin:0;font-size:.78rem;color:#888;">$${pendingTotal.toLocaleString("es-MX")} en facturas sin pagar</p>
+            </div>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><polyline points="9 18 15 12 9 6"/></svg>
+        `;
+        row2.addEventListener("click", () => {
+            document.getElementById("goFacturas")?.click();
+        });
+        resumen.appendChild(row2);
+    }
 }
 
 navItems[4]?.addEventListener("click", () => {
@@ -4337,7 +4441,60 @@ document.getElementById("saveTallerConfigBtn")?.addEventListener("click", async 
     document.getElementById("tallerConfigModal").classList.add("hidden");
     showSaveToast("ok");
 });
+/* ========================================
+   ALERTAS PUSH — PENDIENTES DEL DÍA
+======================================== */
+async function avisarPendientes() {
+    if(!_currentUserId) return;
+    if(Notification.permission !== "granted") return;
 
+    // Throttle: una vez por día por usuario
+    const hoy = new Date().toDateString();
+    const clave = `taller_aviso_pendientes_${_currentUserId}`;
+    if(localStorage.getItem(clave) === hoy) return;
+    localStorage.setItem(clave, hoy);
+
+    const alertas = [];
+
+    // 1. Tareas vencidas
+    const hoyTs = new Date(); hoyTs.setHours(0,0,0,0);
+    document.querySelectorAll("#workshopTasks .workshop-task").forEach(task => {
+        const delivery = task.dataset.delivery;
+        const status   = task.querySelector(".task-select")?.value || task.dataset.status;
+        if(!delivery || status === "Completado") return;
+        const fechaEntrega = new Date(delivery + "T00:00:00");
+        if(fechaEntrega < hoyTs){
+            alertas.push(`⏰ Tarea vencida: ${task.dataset.title} — ${task.dataset.vehicle}`);
+        }
+    });
+
+    // 2. Órdenes de compra pendientes
+    const ordenesPendientes = [...document.querySelectorAll("#ordenesList .workshop-task")]
+        .filter(c => c.dataset.status !== "Recibida" && c.dataset.status !== "Cancelada").length;
+    if(ordenesPendientes > 0){
+        alertas.push(`${ordenesPendientes} orden${ordenesPendientes > 1 ? "es" : ""} de compra sin recibir`);
+    }
+
+    // 3. Facturas por cobrar
+    let totalPorCobrar = 0;
+    let facturasPendientes = 0;
+    document.querySelectorAll("#facturasList .workshop-task").forEach(c => {
+        if(c.dataset.status === "Pagada" || c.dataset.status === "Cancelada") return;
+        facturasPendientes++;
+        const items = JSON.parse(c.dataset.items || "[]");
+        totalPorCobrar += items.reduce((s, i) => s + (i.quantity || 1) * (i.unitPrice || 0), 0);
+    });
+    if(facturasPendientes > 0){
+        alertas.push(`${facturasPendientes} factura${facturasPendientes > 1 ? "s" : ""} por cobrar — $${totalPorCobrar.toLocaleString("es-MX")}`);
+    }
+
+    if(alertas.length === 0) return;
+
+    for(const msg of alertas){
+        await avisar(msg, "Pendientes del taller");
+        await new Promise(r => setTimeout(r, 800));
+    }
+}
 /* ========================================
    GENERACIÓN DE PDF — MÓDULO COMPRAS
 ======================================== */
