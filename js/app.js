@@ -2836,6 +2836,7 @@ async function inicializarEstructurasDeUsuario() {
     await loadPurchaseOrders();
     await loadRecepciones();
     await loadInvoices();
+    await loadTallerConfig();
 
     _isLoading = false;
     initEmptyStates();
@@ -3015,12 +3016,17 @@ function createTechnicianCard(name, phone, email, specialty, notes) {
     card.dataset.notes     = notes     || "";
 
     card.innerHTML = `
-        <div>
-            <strong class="tech-name">${name}</strong>
-            <p class="tech-specialty">🔧 ${specialty || "Sin especialidad"}</p>
-            ${phone ? `<p class="tech-phone">📞 ${phone}</p>` : ""}
-            ${email ? `<p>✉️ ${email}</p>` : ""}
-            ${notes ? `<p style="font-size:.75rem;color:#888">${notes}</p>` : ""}
+        <div class="workshop-task-row">
+            <div class="module-card-icon icon-tecnico">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+            </div>
+            <div>
+                <strong class="tech-name">${name}</strong>
+                <p class="tech-specialty">🔧 ${specialty || "Sin especialidad"}</p>
+                ${phone ? `<p class="tech-phone">📞 ${phone}</p>` : ""}
+                ${email ? `<p>✉️ ${email}</p>` : ""}
+                ${notes ? `<p style="font-size:.75rem;color:#888">${notes}</p>` : ""}
+            </div>
         </div>
         <div class="task-actions">
             <button class="tech-edit-btn" title="Editar">
@@ -3159,13 +3165,18 @@ function createSupplierCard(name, contact, phone, email, address, notes) {
     card.dataset.notes    = notes    || "";
 
     card.innerHTML = `
-        <div>
-            <strong class="supp-name">${name}</strong>
-            <p class="supp-contact">${contact || "Sin contacto"}</p>
-            ${phone   ? `<p class="supp-phone">📞 ${phone}</p>` : ""}
-            ${email   ? `<p>✉️ ${email}</p>`                    : ""}
-            ${address ? `<p>📍 ${address}</p>`                   : ""}
-            ${notes   ? `<p style="font-size:.75rem;color:#888">${notes}</p>` : ""}
+        <div class="workshop-task-row">
+            <div class="module-card-icon icon-proveedor">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            </div>
+            <div>
+                <strong class="supp-name">${name}</strong>
+                <p class="supp-contact">${contact || "Sin contacto"}</p>
+                ${phone   ? `<p class="supp-phone">📞 ${phone}</p>` : ""}
+                ${email   ? `<p>✉️ ${email}</p>`                    : ""}
+                ${address ? `<p>📍 ${address}</p>`                   : ""}
+                ${notes   ? `<p style="font-size:.75rem;color:#888">${notes}</p>` : ""}
+            </div>
         </div>
         <div class="task-actions">
             <button class="supp-edit-btn" title="Editar">
@@ -3380,15 +3391,20 @@ function createPurchaseOrderCard({ supplierName = "", status = "Borrador", notes
     card.dataset.poUid        = poUid || (window.crypto?.randomUUID ? crypto.randomUUID() : ("po_" + Date.now() + "_" + Math.random().toString(36).slice(2)));
 
     card.innerHTML = `
-        <div>
-            <strong class="po-supplier">${supplierName || "Sin proveedor"}</strong>
-            <p><span class="po-status-badge vp-card-status ${_getPoStatusClass(status)}">${status}</span></p>
-            <p class="po-items-count">${items.length} producto${items.length !== 1 ? "s" : ""}</p>
-            ${notes ? `<p style="font-size:.75rem;color:#888">${notes}</p>` : ""}
-            <p style="font-size:.72rem;color:#aaa;display:flex;align-items:center;gap:4px;">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                ${date}
-            </p>
+        <div class="workshop-task-row">
+            <div class="module-card-icon icon-orden">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            </div>
+            <div>
+                <strong class="po-supplier">${supplierName || "Sin proveedor"}</strong>
+                <p><span class="po-status-badge vp-card-status ${_getPoStatusClass(status)}">${status}</span></p>
+                <p class="po-items-count">${items.length} producto${items.length !== 1 ? "s" : ""}</p>
+                ${notes ? `<p style="font-size:.75rem;color:#888">${notes}</p>` : ""}
+                <p style="font-size:.72rem;color:#aaa;display:flex;align-items:center;gap:4px;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                    ${date}
+                </p>
+            </div>
         </div>
         <div class="task-actions">
             <button class="po-pdf-btn" title="Descargar PDF">
@@ -3700,12 +3716,17 @@ function createRecepcionCard({ poUid = "", poRef = "", notes = "", items = [], c
     card.dataset.createdAt = createdAt || new Date().toISOString();
 
     card.innerHTML = `
-        <div>
-            <strong>📦 Recepción de mercancía</strong>
-            <p class="recep-po">${poRef || "Sin orden vinculada"}</p>
-            <p class="recep-count">${items.length} producto${items.length !== 1 ? "s" : ""} recibidos</p>
-            ${notes ? `<p style="font-size:.75rem;color:#888">${notes}</p>` : ""}
-            <p style="font-size:.72rem;color:#aaa;">📅 ${date}</p>
+        <div class="workshop-task-row">
+            <div class="module-card-icon icon-recepcion">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><rect x="1" y="3" width="15" height="13" rx="2"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+            </div>
+            <div>
+                <strong>📦 Recepción de mercancía</strong>
+                <p class="recep-po">${poRef || "Sin orden vinculada"}</p>
+                <p class="recep-count">${items.length} producto${items.length !== 1 ? "s" : ""} recibidos</p>
+                ${notes ? `<p style="font-size:.75rem;color:#888">${notes}</p>` : ""}
+                <p style="font-size:.72rem;color:#aaa;">📅 ${date}</p>
+            </div>
         </div>
         <div class="task-actions">
             <button class="recep-edit-btn" title="Editar">
@@ -3971,18 +3992,23 @@ function createFacturaCard({ client = "", vehicle = "", status = "Borrador", not
     card.dataset.createdAt = createdAt || new Date().toISOString();
 
     card.innerHTML = `
-        <div>
-            <strong class="fact-client">${client || "Sin cliente"}</strong>
-            <p class="fact-vehicle" style="display:flex;align-items:center;gap:4px;">
-                ${vehicle ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11"><rect x="1" y="3" width="15" height="13" rx="2"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg> ${vehicle}` : ""}
-            </p>
-            <p><span class="fact-status vp-card-status ${_getFacturaStatusClass(status)}">${status}</span></p>
-            <p class="fact-total" style="font-weight:700;color:#111;">$${total.toLocaleString("es-MX")}</p>
-            <p style="font-size:.72rem;color:#aaa;display:flex;align-items:center;gap:4px;">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                ${date}
-            </p>
-            ${notes ? `<p style="font-size:.75rem;color:#888">${notes}</p>` : ""}
+        <div class="workshop-task-row">
+            <div class="module-card-icon icon-factura">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="2"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="11" y2="16"/></svg>
+            </div>
+            <div>
+                <strong class="fact-client">${client || "Sin cliente"}</strong>
+                <p class="fact-vehicle" style="display:flex;align-items:center;gap:4px;">
+                    ${vehicle ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11"><rect x="1" y="3" width="15" height="13" rx="2"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg> ${vehicle}` : ""}
+                </p>
+                <p><span class="fact-status vp-card-status ${_getFacturaStatusClass(status)}">${status}</span></p>
+                <p class="fact-total" style="font-weight:700;color:#111;">$${total.toLocaleString("es-MX")}</p>
+                <p style="font-size:.72rem;color:#aaa;display:flex;align-items:center;gap:4px;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                    ${date}
+                </p>
+                ${notes ? `<p style="font-size:.75rem;color:#888">${notes}</p>` : ""}
+            </div>
         </div>
         <div class="task-actions">
             <button class="fact-pdf-btn" title="Descargar PDF">
@@ -4120,10 +4146,44 @@ const recepcionesPage   = document.getElementById("recepcionesPage");
 const facturasPage      = document.getElementById("facturasPage");
 const tecnicosPage      = document.getElementById("tecnicosPage");
 
+function updateComprasHubStats() {
+    const suppCount = document.querySelectorAll("#suppliersList .workshop-task").length;
+    const statProveedores = document.getElementById("statProveedores");
+    if (statProveedores) {
+        statProveedores.textContent = suppCount === 0 ? "Sin proveedores" : `${suppCount} proveedor${suppCount !== 1 ? "es" : ""}`;
+    }
+
+    const poCards     = document.querySelectorAll("#ordenesList .workshop-task");
+    const poPending    = [...poCards].filter(c => c.dataset.status !== "Recibida" && c.dataset.status !== "Cancelada").length;
+    const statOrdenes = document.getElementById("statOrdenes");
+    if (statOrdenes) {
+        statOrdenes.textContent = poPending === 0 ? "Sin pendientes" : `${poPending} pendiente${poPending !== 1 ? "s" : ""}`;
+    }
+
+    const recepCount = document.querySelectorAll("#recepcionesList .workshop-task").length;
+    const statRecepciones = document.getElementById("statRecepciones");
+    if (statRecepciones) {
+        statRecepciones.textContent = recepCount === 0 ? "Sin recepciones" : `${recepCount} registrada${recepCount !== 1 ? "s" : ""}`;
+    }
+
+    const factCards = document.querySelectorAll("#facturasList .workshop-task");
+    let pendingTotal = 0;
+    factCards.forEach(c => {
+        if (c.dataset.status === "Pagada" || c.dataset.status === "Cancelada") return;
+        const items = JSON.parse(c.dataset.items || "[]");
+        pendingTotal += items.reduce((s, i) => s + (i.quantity || 1) * (i.unitPrice || 0), 0);
+    });
+    const statFacturas = document.getElementById("statFacturas");
+    if (statFacturas) {
+        statFacturas.textContent = pendingTotal > 0 ? `$${pendingTotal.toLocaleString("es-MX")} por cobrar` : "Sin pendientes";
+    }
+}
+
 navItems[4]?.addEventListener("click", () => {
     hideAllPages();
     comprasPage.classList.remove("hidden");
     setActiveNav(4);
+    updateComprasHubStats();
 });
 
 document.getElementById("backFromCompras")?.addEventListener("click", goBackToDashboard);
@@ -4160,6 +4220,7 @@ function goBackToCompras() {
     recepcionesPage?.classList.add("hidden");
     facturasPage?.classList.add("hidden");
     comprasPage.classList.remove("hidden");
+    updateComprasHubStats();
 }
 
 document.getElementById("backFromProveedores")?.addEventListener("click", goBackToCompras);
@@ -4185,6 +4246,65 @@ document.addEventListener("click", (e) => {
         poStatusOptions?.classList.add("hidden");
     if (!e.target.closest("#facturaModal .custom-status-select"))
         facturaStatusOptions?.classList.add("hidden");
+});
+
+/* ========================================
+   CONFIGURACIÓN DEL TALLER (editable, para PDFs)
+======================================== */
+
+async function loadTallerConfig() {
+    try {
+        const { data: { session } } = await _supabase.auth.getSession();
+        if (!session) return;
+        const { data, error } = await _supabase
+            .from("taller_config")
+            .select("*")
+            .eq("user_id", session.user.id)
+            .maybeSingle();
+        if (error || !data) return;
+        TALLER_CONFIG.name    = data.name     || TALLER_CONFIG.name;
+        TALLER_CONFIG.tagline = data.tagline  || TALLER_CONFIG.tagline;
+        TALLER_CONFIG.logoUrl = data.logo_url || TALLER_CONFIG.logoUrl;
+    } catch (e) {
+        console.error("Error cargando configuración del taller:", e);
+    }
+}
+
+async function saveTallerConfig(name, tagline, logoUrl) {
+    try {
+        const { data: { session } } = await _supabase.auth.getSession();
+        if (!session) return;
+        const uid = session.user.id;
+        await _supabase.from("taller_config").upsert(
+            { user_id: uid, name, tagline, logo_url: logoUrl },
+            { onConflict: "user_id" }
+        );
+        TALLER_CONFIG.name    = name;
+        TALLER_CONFIG.tagline = tagline;
+        TALLER_CONFIG.logoUrl = logoUrl;
+    } catch (e) {
+        console.error("Error guardando configuración del taller:", e);
+    }
+}
+
+document.getElementById("openTallerConfigBtn")?.addEventListener("click", () => {
+    document.getElementById("configTallerName").value    = TALLER_CONFIG.name    || "";
+    document.getElementById("configTallerTagline").value = TALLER_CONFIG.tagline || "";
+    document.getElementById("configTallerLogo").value    = TALLER_CONFIG.logoUrl || "";
+    document.getElementById("tallerConfigModal").classList.remove("hidden");
+});
+
+document.getElementById("closeTallerConfigModal")?.addEventListener("click", () => {
+    document.getElementById("tallerConfigModal").classList.add("hidden");
+});
+
+document.getElementById("saveTallerConfigBtn")?.addEventListener("click", async () => {
+    const name    = document.getElementById("configTallerName").value.trim()    || "Mi Taller Mecánico";
+    const tagline = document.getElementById("configTallerTagline").value.trim();
+    const logoUrl = document.getElementById("configTallerLogo").value.trim();
+    await saveTallerConfig(name, tagline, logoUrl);
+    document.getElementById("tallerConfigModal").classList.add("hidden");
+    showSaveToast("ok");
 });
 
 /* ========================================
