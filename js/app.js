@@ -335,16 +335,7 @@ function updateDashboardHeader(){
 }
 
 /* "Ver todos" del dashboard → navegan a la sección */
-document.getElementById("dashGoVehicles")?.addEventListener("click", ()=>{
-    dashboard.classList.add("hidden");
-    vehiclesPage.classList.remove("hidden");
-    setActiveNav(0);
-});
-document.getElementById("dashGoInventory")?.addEventListener("click", ()=>{
-    dashboard.classList.add("hidden");
-    inventoryPage.classList.remove("hidden");
-    setActiveNav(2);
-});
+
 /* =========================
    EMPTY STATES
 ========================= */
@@ -806,12 +797,19 @@ document.getElementById("dashGoVehicles")?.addEventListener("click", ()=>{
     vehiclesPage.classList.remove("hidden");
     updateCounts();
 });
+document.getElementById("dashGoCompras")?.addEventListener("click", ()=>{
+    hideAllPages();
+    setActiveNav(4);
+    comprasPage.classList.remove("hidden");
+    updateComprasHubStats();
+});
 function goBackToDashboard(){
     hideAllPages();
     dashboard.classList.remove("hidden");
     updateDashboardStats();
     updateDashVehicles();
     updateDashLowStock();
+    updateDashCompras();
     updateComprasHubStats();
     updateComprasNavDot();
 }
@@ -875,6 +873,7 @@ let currentTarget = null;
 addButtons.forEach(button=>{
     button.addEventListener("click", ()=>{
 
+        editingVehicleCard = null;
         currentTarget = document.getElementById(button.dataset.target);
         vehicleModal.classList.remove("hidden");
 
@@ -905,11 +904,63 @@ saveVehicleBtn.addEventListener("click", ()=>{
     const plate = document.getElementById("vehiclePlate").value.trim();
     const color = document.getElementById("vehicleColor").value.trim();
     const owner = document.getElementById("vehicleOwner").value.trim();
-    // ---> AÑADE ESTA LÍNEA AQUÍ:
     const notes = document.getElementById("vehicleNotes").value.trim();
 
     if(!brand || !model) return;
 
+    // ── MODO EDICIÓN ──
+    if (editingVehicleCard !== null) {
+        const card    = editingVehicleCard;
+        const newName = `${brand} ${model}`;
+        card.dataset.vehicleName = newName;
+        card.dataset.year  = year;
+        card.dataset.plate = plate;
+        card.dataset.color = color;
+        card.dataset.owner = owner;
+        card.dataset.notes = notes;
+
+        const leftDiv   = card.querySelector(".vp-card-left");
+        const statusEl  = card.querySelector(".vp-card-status");
+        const sCls      = Array.from(statusEl?.classList || []).find(c => c.startsWith("status-")) || "status-ingresado";
+        const sLabel    = statusEl?.textContent.trim() || "Ingresado";
+        leftDiv.innerHTML = `
+            <span class="vp-card-name">${newName} &nbsp;·&nbsp; ${plate || "Sin placa"}</span>
+            <span class="vp-card-plate">${owner || "Sin dueño"}</span>
+            <span class="vp-card-detail">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><circle cx="12" cy="12" r="10"/></svg>
+                ${color || "—"} &nbsp;·&nbsp;
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                ${year || "—"}
+            </span>
+            ${notes ? `<span class="vp-card-notes"><strong>Notas:</strong> ${notes}</span>` : ""}
+            <span class="vp-card-status ${sCls}">${sLabel}</span>
+        `;
+
+        const rightDiv = card.querySelector(".vp-card-right");
+        let contactBtn = rightDiv.querySelector(".vp-contact-btn");
+        if (owner) {
+            if (!contactBtn) {
+                contactBtn = document.createElement("button");
+                contactBtn.className = "vp-contact-btn";
+                contactBtn.textContent = "📞";
+                rightDiv.insertBefore(contactBtn, rightDiv.querySelector(".vp-edit-btn"));
+            }
+            const fresh = contactBtn.cloneNode(true);
+            contactBtn.parentNode.replaceChild(fresh, contactBtn);
+            fresh.title = `Contactar a ${owner}`;
+            fresh.addEventListener("click", (e) => { e.stopPropagation(); showContactSheet(owner, fresh); });
+        } else {
+            if (contactBtn) contactBtn.remove();
+        }
+
+        editingVehicleCard = null;
+        vehicleModal.classList.add("hidden");
+        saveVehicles();
+        addActivity("vehicle", "Vehículo editado", `${newName} · ${plate || "Sin placa"}`);
+        return;
+    }
+
+    // ── MODO NUEVO ──
     const today = new Date().toLocaleDateString("es-MX");
 
     const targets = {
@@ -999,6 +1050,7 @@ function createVehicleCard(name, target, year, plate, color, owner, date, status
         <div class="vp-card-right">
     <button class="vp-history-btn" title="Historial">🕐</button>
     ${owner ? `<button class="vp-contact-btn" title="Contactar a ${owner}">📞</button>` : ""}
+    <button class="vp-edit-btn" title="Editar">✏</button>
     <button class="vp-delete" title="Eliminar">✕</button>
 </div>
     `;
@@ -1011,6 +1063,20 @@ function createVehicleCard(name, target, year, plate, color, owner, date, status
             
         });
     }
+    card.querySelector(".vp-edit-btn").addEventListener("click", (e) => {
+        e.stopPropagation();
+        editingVehicleCard = card;
+        const parts = (card.dataset.vehicleName || "").split(" ");
+        document.getElementById("vehicleBrand").value = parts[0] || "";
+        document.getElementById("vehicleModel").value = parts.slice(1).join(" ") || "";
+        document.getElementById("vehicleYear").value  = card.dataset.year  || "";
+        document.getElementById("vehiclePlate").value = card.dataset.plate || "";
+        document.getElementById("vehicleColor").value = card.dataset.color || "";
+        document.getElementById("vehicleOwner").value = card.dataset.owner || "";
+        document.getElementById("vehicleNotes").value = card.dataset.notes || "";
+        vehicleModal.classList.remove("hidden");
+    });
+
     card.querySelector(".vp-history-btn").addEventListener("click", (e) => {
     e.stopPropagation();
     showVehicleHistory(card);
@@ -1239,6 +1305,7 @@ const externalClientsList  = document.getElementById("externalClientsList");
 let editingClientCard    = null;
 let editingTaskEl        = null;
 let editingInventoryCard = null;
+let editingVehicleCard   = null;
 
 function openClientModalForNew(section = "recent"){
     editingClientCard = null;
@@ -1601,9 +1668,11 @@ saveWorkshopTaskBtn.addEventListener("click", ()=>{
         // Actualizar bloque de info sin destruir listeners de los botones
         const infoDiv = task.children[0];
         if(infoDiv){
+            const _editVeh   = findVehicleCardByName(vehicle);
+            const _editOwner = _editVeh?.dataset.owner || "";
             infoDiv.innerHTML = `
                 <strong>${title}</strong>
-                <p>${vehicle}</p>
+                <p>${vehicle}${_editOwner ? ` <span style="font-size:.75rem;color:#888;">— ${_editOwner}</span>` : ""}</p>
                 <p>📅 Entrega: ${displayDate}</p>
                 ${technicianName ? `<p style="font-size:.78rem;color:#f5820d;font-weight:600;">👨‍🔧 ${technicianName}</p>` : ""}
                 ${parts.length > 0 ? `<div class="parts-saved-list">${parts.map(p => `<span class="part-saved-row">${p.name} × ${p.qty}</span>`).join("")}</div>` : ""}
@@ -1662,6 +1731,9 @@ function createWorkshopTask(title, vehicle, delivery, status, parts = [], techni
     task.dataset.parts          = JSON.stringify(parts);
     task.dataset.technicianName = technicianName;
 
+    const _linkedVeh   = findVehicleCardByName(vehicle);
+    const _taskOwner   = _linkedVeh?.dataset.owner || "";
+
     let displayDate = "Sin fecha";
     if(delivery){
         const d = new Date(delivery + "T00:00:00");
@@ -1671,7 +1743,7 @@ function createWorkshopTask(title, vehicle, delivery, status, parts = [], techni
     task.innerHTML = `
         <div>
             <strong>${title}</strong>
-            <p>${vehicle}</p>
+            <p>${vehicle}${_taskOwner ? ` <span style="font-size:.75rem;color:#888;">— ${_taskOwner}</span>` : ""}</p>
             <p>📅 Entrega: ${displayDate}</p>
             ${technicianName ? `<p style="font-size:.78rem;color:#f5820d;font-weight:600;">👨‍🔧 ${technicianName}</p>` : ""}
             ${parts.length > 0 ? `<div class="parts-saved-list">${parts.map(p => `<span class="part-saved-row">${p.name} × ${p.qty}</span>`).join("")}</div>` : ""}
@@ -2214,6 +2286,39 @@ function updateDashLowStock(){
         </div>
     `).join("");
 }
+function updateDashCompras(){
+    const container = document.getElementById("dashComprasList");
+    if(!container) return;
+    const rows = [];
+
+    const pendingPOs = [...document.querySelectorAll("#ordenesList .workshop-task")]
+        .filter(c => c.dataset.status !== "Recibida" && c.dataset.status !== "Cancelada");
+    if(pendingPOs.length > 0){
+        rows.push({ icon:"📋", label:"Órdenes sin recibir", value:`${pendingPOs.length} pendiente${pendingPOs.length !== 1 ? "s" : ""}` });
+    }
+
+    let unpaidTotal = 0;
+    document.querySelectorAll("#facturasList .workshop-task").forEach(c => {
+        if(c.dataset.status === "Pagada" || c.dataset.status === "Cancelada") return;
+        const items = JSON.parse(c.dataset.items || "[]");
+        unpaidTotal += items.reduce((s, i) => s + (i.quantity || 1) * (i.unitPrice || 0), 0);
+    });
+    if(unpaidTotal > 0){
+        rows.push({ icon:"💰", label:"Por cobrar", value:`$${unpaidTotal.toLocaleString("es-MX")}` });
+    }
+
+    if(rows.length === 0){
+        container.innerHTML = `<p class="dash-empty-msg">Sin pendientes de compras</p>`;
+        return;
+    }
+    container.innerHTML = rows.map(r => `
+        <div class="dash-vehicle-row">
+            <span style="font-size:1rem;min-width:20px;">${r.icon}</span>
+            <span class="dash-veh-plate" style="min-width:auto;flex:1;">${r.label}</span>
+            <span class="dash-veh-owner" style="flex:none;font-weight:700;color:#f5820d;">${r.value}</span>
+        </div>
+    `).join("");
+}
 function updateInventoryStats(){
     const cards  = document.querySelectorAll(".inventory-card");
     let lowCount  = 0;
@@ -2512,6 +2617,7 @@ function showCompletedBanner(taskTitle, vehicleName){
         <div class="banner-actions">
             ${clientPhone ? `<button class="banner-email-btn" onclick="window.open('tel:${clientPhone}')">📞 Llamar</button>` : ""}
             <button class="banner-email-btn" onclick="notifyWhatsApp('${vehicleName}','${clientPhone}')">💬 WhatsApp</button>
+            <button class="banner-email-btn" onclick="abrirFacturaDesdeTask(${JSON.stringify(vehicleName)},${JSON.stringify(taskTitle)})">📋 Factura</button>
             <button class="banner-close-btn" onclick="document.getElementById('completedBanner').remove()">✕</button>
         </div>
     `;
@@ -2525,6 +2631,36 @@ function notifyWhatsApp(vehicleName, phone){
         ? `https://wa.me/${phone.replace(/\D/g,'')}?text=${msg}`
         : `https://wa.me/?text=${msg}`
     );
+}
+
+function abrirFacturaDesdeTask(vehicleName, taskTitle) {
+    const vCard = findVehicleCardByName(vehicleName);
+    const owner = vCard?.dataset.owner || "";
+
+    _editingFacturaCard = null;
+    document.querySelector("#facturaModal h2").textContent = "Nueva factura";
+    refreshClientSelect();
+    refreshVehicleSelectFactura();
+    document.getElementById("facturaClientSelect").value  = owner;
+    document.getElementById("facturaVehicleSelect").value = vehicleName;
+    if (facturaStatusBtn)   facturaStatusBtn.textContent = "Emitida";
+    if (facturaStatusInput) facturaStatusInput.value     = "Emitida";
+    document.getElementById("facturaNotes").value = "";
+    const itemsList = document.getElementById("facturaItemsList");
+    itemsList.innerHTML = "";
+    itemsList.appendChild(buildFacturaItemRow(taskTitle, 1, 0));
+    document.getElementById("facturaItemsBody")?.classList.add("open");
+    document.getElementById("facturaItemsArrow")?.classList.add("open");
+
+    hideAllPages();
+    setActiveNav(4);
+    document.getElementById("facturasPage")?.classList.remove("hidden");
+    checkEmptyState("facturasList");
+    aplicarFiltroFacturas("Todos");
+    document.getElementById("facturaModal").classList.remove("hidden");
+
+    const b = document.getElementById("completedBanner");
+    if (b) b.remove();
 }
 
 /* ========================================
@@ -2589,6 +2725,7 @@ function syncVehicleToReady(vehicleName, taskTitle){
         avisar(`✅ ${card.dataset.vehicleName || vehicleName} está listo para entrega`);
         updateCounts();
         refreshClientVehicleStatuses();
+        saveVehicles();
     });
 }
 
@@ -2705,19 +2842,7 @@ if(clientSearchInput){
 /* =========================
    LOGOUT
 ========================= */
-document.getElementById("logoutBtn")?.addEventListener("click", async ()=>{
-    if(!confirm("¿Cerrar sesión?")) return;
-    _notifData     = [];
-    _activityData  = [];
-    _currentUserId = null;
-    await _supabase.auth.signOut();
-    limpiarDOM();
-    hideAllPages();
-    dashboard.classList.add("hidden");
-    document.querySelector(".login-page").style.display = "flex";
-    document.querySelector('.login-form input[type="email"]').value    = "";
-    document.querySelector('.login-form input[type="password"]').value = "";
-});
+
 /* ========================================
    GUARDAR ESTADO
 ======================================== */
@@ -2916,12 +3041,67 @@ async function inicializarEstructurasDeUsuario() {
         updateDashboardStats();
         updateDashVehicles();
         updateDashLowStock();
+        updateComprasHubStats();
+        updateComprasNavDot();
+        updateDashCompras();
 
         if(_currentUserId){
             loadPersistedNotifications(_currentUserId);
             loadPersistedActivity(_currentUserId);
         }
     }
+}
+
+/* ========================================
+   SINCRONIZACIÓN EN TIEMPO REAL — SUPABASE
+======================================== */
+let _rtDebounce = {};
+function _rtReload(key, reloadFn, updateFn, delay = 2500) {
+    clearTimeout(_rtDebounce[key]);
+    _rtDebounce[key] = setTimeout(async () => {
+        if (_isLoading) return;
+        if (document.querySelector(".vehicle-modal:not(.hidden), .client-modal:not(.hidden)")) return;
+        _isLoading = true;
+        try { await reloadFn(); } catch(e){ console.error("[RT]", e); } finally { _isLoading = false; }
+        try { updateFn(); } catch(e){}
+    }, delay);
+}
+
+function iniciarRealtimeSync() {
+    _supabase.channel("taller-live")
+        .on("postgres_changes", { event: "*", schema: "public", table: "vehicles" }, () => {
+            _rtReload("vehicles", async () => {
+                ["incomingList","serviceList","readyList","doneList"].forEach(id => {
+                    const el = document.getElementById(id); if(el) el.innerHTML = "";
+                });
+                await loadVehicles();
+            }, () => { updateCounts(); updateDashVehicles(); refreshClientVehicleStatuses(); });
+        })
+        .on("postgres_changes", { event: "*", schema: "public", table: "workshop_tasks" }, () => {
+            _rtReload("tasks", async () => {
+                const el = document.getElementById("workshopTasks"); if(el) el.innerHTML = "";
+                await loadWorkshopTasks();
+            }, () => updateWorkshopStats());
+        })
+        .on("postgres_changes", { event: "*", schema: "public", table: "inventory" }, () => {
+            _rtReload("inventory", async () => {
+                const el = document.getElementById("inventoryList"); if(el) el.innerHTML = "";
+                await loadInventory();
+            }, () => { updateInventoryStats(); updateDashLowStock(); });
+        })
+        .on("postgres_changes", { event: "*", schema: "public", table: "purchase_orders" }, () => {
+            _rtReload("orders", async () => {
+                const el = document.getElementById("ordenesList"); if(el) el.innerHTML = "";
+                await loadPurchaseOrders();
+            }, () => { updateComprasHubStats(); updateComprasNavDot(); updateDashCompras(); });
+        })
+        .on("postgres_changes", { event: "*", schema: "public", table: "invoices" }, () => {
+            _rtReload("invoices", async () => {
+                const el = document.getElementById("facturasList"); if(el) el.innerHTML = "";
+                await loadInvoices();
+            }, () => { updateComprasHubStats(); updateComprasNavDot(); updateDashCompras(); });
+        })
+        .subscribe();
 }
 
 /* ========================================
@@ -2939,6 +3119,7 @@ async function inicializarEstructurasDeUsuario() {
             await inicializarEstructurasDeUsuario();
             solicitarPermisoNotificaciones();
             setTimeout(() => avisarPendientes(), 4000);
+            iniciarRealtimeSync();
         }
         // Marcar datos como listos (con o sin sesión)
         window._loaderDataDone = true;
@@ -3340,6 +3521,24 @@ function refreshSupplierSelect() {
     });
     if (current) sel.value = current;
 }
+
+document.getElementById("poSupplierSelect")?.addEventListener("change", () => {
+    const sel     = document.getElementById("poSupplierSelect");
+    const infoDiv = document.getElementById("poSupplierInfo");
+    if (!infoDiv) return;
+    if (!sel.value) { infoDiv.style.display = "none"; return; }
+    const suppCard = [...document.querySelectorAll("#suppliersList .workshop-task")]
+        .find(c => c.dataset.name === sel.value);
+    if (!suppCard) { infoDiv.style.display = "none"; return; }
+    const lines = [];
+    if (suppCard.dataset.contact) lines.push(`👤 ${suppCard.dataset.contact}`);
+    if (suppCard.dataset.phone)   lines.push(`📞 ${suppCard.dataset.phone}`);
+    if (suppCard.dataset.email)   lines.push(`✉️ ${suppCard.dataset.email}`);
+    if (suppCard.dataset.address) lines.push(`📍 ${suppCard.dataset.address}`);
+    if (lines.length === 0) { infoDiv.style.display = "none"; return; }
+    infoDiv.innerHTML = lines.join("<br>");
+    infoDiv.style.display = "block";
+});
 
 /* ========================================
    MÓDULO: ÓRDENES DE COMPRA
@@ -4021,12 +4220,12 @@ document.getElementById("saveFacturaBtn")?.addEventListener("click", () => {
     if (_editingFacturaCard) {
         const card = _editingFacturaCard;
         const newTotal = items.reduce((s, i) => s + (i.quantity || 1) * (i.unitPrice || 0), 0);
+        const oldStatus = card.dataset.status;
         card.dataset.client  = client;
         card.dataset.vehicle = vehicle;
         card.dataset.status  = status;
         card.dataset.notes   = notes;
         card.dataset.items   = JSON.stringify(items);
-        const oldStatus = card.dataset.status;
         card.querySelector(".fact-client").textContent  = client  || "Sin cliente";
         card.querySelector(".fact-vehicle").textContent = vehicle ? `🚗 ${vehicle}` : "";
         card.querySelector(".fact-status").className    = `fact-status vp-card-status ${_getFacturaStatusClass(status)}`;
@@ -4347,7 +4546,29 @@ document.getElementById("goFacturas")?.addEventListener("click", () => {
     comprasPage.classList.add("hidden");
     facturasPage.classList.remove("hidden");
     checkEmptyState("facturasList");
+    aplicarFiltroFacturas("Todos");
 });
+
+document.getElementById("facturaFilterChips")?.addEventListener("click", (e) => {
+    const btn = e.target.closest(".factura-filter");
+    if (!btn) return;
+    const filter = btn.dataset.filter;
+    document.querySelectorAll(".factura-filter").forEach(b => {
+        b.style.background = "rgba(255,255,255,.6)";
+        b.style.color      = "#555";
+        b.style.border     = "1.5px solid rgba(0,0,0,.1)";
+    });
+    btn.style.background = "rgba(245,130,13,.1)";
+    btn.style.color      = "#f5820d";
+    btn.style.border     = "1.5px solid rgba(245,130,13,.3)";
+    aplicarFiltroFacturas(filter);
+});
+
+function aplicarFiltroFacturas(filter) {
+    document.querySelectorAll("#facturasList .workshop-task").forEach(card => {
+        card.style.display = (filter === "Todos" || card.dataset.status === filter) ? "" : "none";
+    });
+}
 
 function goBackToCompras() {
     proveedoresPage?.classList.add("hidden");
