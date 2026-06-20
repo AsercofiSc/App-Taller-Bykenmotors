@@ -399,8 +399,8 @@ function showContactSheet(ownerName, anchorEl){
     sheet.innerHTML = `
         <span class="contact-sheet-name">${ownerName}</span>
         ${phone
-            ? `<button class="contact-sheet-btn" id="csCall">📞 Llamar</button>
-               <button class="contact-sheet-btn" id="csWA">💬 WhatsApp</button>`
+            ? `<button class="contact-sheet-btn" id="csCall"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.39 2 2 0 0 1 3.6 1.21h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 9.91a16 16 0 0 0 6.08 6.08l1.86-1.86a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg> Llamar</button>
+               <button class="contact-sheet-btn" id="csWA"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> WhatsApp</button>`
             : `<div style="padding:8px 14px;font-size:.78rem;color:#aaa;">Sin teléfono registrado</div>`
         }
     `;
@@ -641,7 +641,8 @@ async function updateTaskEvidenceCount(task, uid){
         .eq("vehicle_uid", uid)
         .eq("kind", "evidencia")
         .eq("caption", task.dataset.title || "");
-    btn.textContent = count > 0 ? `📷 ${count}` : "📷";
+    const _camSvg = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>`;
+    btn.innerHTML = count > 0 ? `${_camSvg} ${count}` : _camSvg;
 }
 
 async function uploadVehiclePhoto(vehicleUid, file, sheet, kind = "general", caption = ""){
@@ -711,7 +712,7 @@ async function renderVehiclePhotos(vehicleUid, sheet, kindFilter = null, caption
             <img src="${p.url}" alt="Foto del vehículo" loading="lazy">
             ${p.caption ? `<span class="history-photo-caption">${p.caption}</span>` : ""}
             <div class="history-photo-actions">
-                <button class="history-photo-wa-btn" title="Enviar por WhatsApp">💬</button>
+                <button class="history-photo-wa-btn" title="Enviar por WhatsApp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></button>
                 <button class="history-photo-del-btn" title="Eliminar">✕</button>
             </div>
         </div>
@@ -942,7 +943,7 @@ saveVehicleBtn.addEventListener("click", ()=>{
             if (!contactBtn) {
                 contactBtn = document.createElement("button");
                 contactBtn.className = "vp-contact-btn";
-                contactBtn.textContent = "📞";
+                contactBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.39 2 2 0 0 1 3.6 1.21h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 9.91a16 16 0 0 0 6.08 6.08l1.86-1.86a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>`;
                 rightDiv.insertBefore(contactBtn, rightDiv.querySelector(".vp-edit-btn"));
             }
             const fresh = contactBtn.cloneNode(true);
@@ -1393,7 +1394,7 @@ function renderClientCardHTML(name, phone, email, vehicle, source, lastService, 
     <span class="cp-vehicle">${svgCar} ${vehicle}</span>
     <span class="cp-vehicle-status vp-card-status" style="display:none;"></span>
 ` : ""}
-                ${lastService ? `<span class="cp-last-service">🔧 ${lastService} — ${lastServiceDate}</span>` : ""}
+                ${lastService ? `<span class="cp-last-service" style="display:flex;align-items:center;gap:4px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg> ${lastService} — ${lastServiceDate}</span>` : ""}
                 <span class="cp-source">${srcIcon} ${source}</span>
             </div>
         </div>
@@ -1570,13 +1571,13 @@ function buildPartRow(){
         const stock = parseInt(card.dataset.stock) || 0;
         optionsHTML += `<option value="${name}">${name} (${stock} en stock)</option>`;
     });
-    optionsHTML += `<option value="__manual__">✏️ Otra pieza...</option>`;
+    optionsHTML += `<option value="__manual__">Otra pieza (manual)...</option>`;
 
     row.innerHTML = `
         <select class="part-select">${optionsHTML}</select>
         <input type="text" class="part-custom" placeholder="Nombre de pieza" style="display:none;flex:1;min-width:0;">
         <input type="number" class="part-qty" value="1" min="1">
-        <button type="button" class="part-remove">✕</button>
+        <button type="button" class="part-remove"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="11" height="11"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
     `;
 
     row.querySelector(".part-select").addEventListener("change", function(){
@@ -1673,8 +1674,11 @@ saveWorkshopTaskBtn.addEventListener("click", ()=>{
             infoDiv.innerHTML = `
                 <strong>${title}</strong>
                 <p>${vehicle}${_editOwner ? ` <span style="font-size:.75rem;color:#888;">— ${_editOwner}</span>` : ""}</p>
-                <p>📅 Entrega: ${displayDate}</p>
-                ${technicianName ? `<p style="font-size:.78rem;color:#f5820d;font-weight:600;">👨‍🔧 ${technicianName}</p>` : ""}
+                <p style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:.82rem;color:#555;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                    ${displayDate}${diasRestantesBadge(delivery)}
+                </p>
+                ${technicianName ? `<p style="font-size:.78rem;color:#f5820d;font-weight:600;display:flex;align-items:center;gap:4px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg> ${technicianName}</p>` : ""}
                 ${parts.length > 0 ? `<div class="parts-saved-list">${parts.map(p => `<span class="part-saved-row">${p.name} × ${p.qty}</span>`).join("")}</div>` : ""}
             `;
         }
@@ -1719,6 +1723,19 @@ saveWorkshopTaskBtn.addEventListener("click", ()=>{
     saveWorkshopTasks(); // <-- AÑADIR AQUÍ
 });
 
+/* ── Calcular badge de días restantes ── */
+function diasRestantesBadge(delivery){
+    if(!delivery) return "";
+    const hoy   = new Date(); hoy.setHours(0,0,0,0);
+    const fecha = new Date(delivery + "T00:00:00");
+    const diff  = Math.round((fecha - hoy) / 86400000);
+    if(diff < 0)   return `<span class="task-days-badge days-late">Vencida hace ${Math.abs(diff)} día${Math.abs(diff) !== 1 ? "s" : ""}</span>`;
+    if(diff === 0) return `<span class="task-days-badge days-today">Hoy</span>`;
+    if(diff === 1) return `<span class="task-days-badge days-soon">Mañana</span>`;
+    if(diff <= 3)  return `<span class="task-days-badge days-soon">${diff} días</span>`;
+    return `<span class="task-days-badge days-ok">${diff} días</span>`;
+}
+
 /* ── Crear tarjeta de tarea ── */
 
 function createWorkshopTask(title, vehicle, delivery, status, parts = [], technicianName = ""){
@@ -1744,8 +1761,11 @@ function createWorkshopTask(title, vehicle, delivery, status, parts = [], techni
         <div>
             <strong>${title}</strong>
             <p>${vehicle}${_taskOwner ? ` <span style="font-size:.75rem;color:#888;">— ${_taskOwner}</span>` : ""}</p>
-            <p>📅 Entrega: ${displayDate}</p>
-            ${technicianName ? `<p style="font-size:.78rem;color:#f5820d;font-weight:600;">👨‍🔧 ${technicianName}</p>` : ""}
+            <p style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:.82rem;color:#555;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                ${displayDate}${diasRestantesBadge(delivery)}
+            </p>
+            ${technicianName ? `<p style="font-size:.78rem;color:#f5820d;font-weight:600;display:flex;align-items:center;gap:4px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg> ${technicianName}</p>` : ""}
             ${parts.length > 0 ? `<div class="parts-saved-list">${parts.map(p => `<span class="part-saved-row">${p.name} × ${p.qty}</span>`).join("")}</div>` : ""}
         </div>
         <div class="task-actions">
@@ -1754,7 +1774,7 @@ function createWorkshopTask(title, vehicle, delivery, status, parts = [], techni
                 <option value="Pendiente"  ${status === "Pendiente"  ? "selected" : ""}>Pendiente</option>
                 <option value="Completado" ${status === "Completado" ? "selected" : ""}>Completado</option>
             </select>
-            <button class="task-evidence-btn" title="Evidencia fotográfica">📷</button>
+            <button class="task-evidence-btn" title="Evidencia fotográfica"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></button>
             <button class="task-edit-btn" title="Editar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
             <button class="delete-task" title="Eliminar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
         </div>
@@ -1932,15 +1952,15 @@ function updateWorkshopStats(){
 const LOW_STOCK_THRESHOLD = 5;
 
 const categoryIcons = {
-    "Filtros"    : "🔧",
-    "Aceites"    : "🛢️",
-    "Frenos"     : "⚙️",
-    "Suspensión" : "🔩",
-    "Eléctrico"  : "⚡",
-    "Motor"      : "🔥",
-    "Transmisión": "🔄",
-    "Carrocería" : "🚗",
-    "Otro"       : "📦"
+    "Filtros"    : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>`,
+    "Aceites"    : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>`,
+    "Frenos"     : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>`,
+    "Suspensión" : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>`,
+    "Eléctrico"  : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>`,
+    "Motor"      : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>`,
+    "Transmisión": `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>`,
+    "Carrocería" : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><rect x="1" y="3" width="15" height="13" rx="2"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>`,
+    "Otro"       : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M12.89 1.45l8 4A2 2 0 0 1 22 7.24v9.52a2 2 0 0 1-1.11 1.79l-8 4a2 2 0 0 1-1.78 0l-8-4A2 2 0 0 1 2 16.76V7.24a2 2 0 0 1 1.11-1.79l8-4a2 2 0 0 1 1.78 0z"/><polyline points="2.32 6.16 12 11 21.68 6.16"/><line x1="12" y1="22.76" x2="12" y2="11"/></svg>`
 };
 
 function requestNotifPermission(){
@@ -1968,11 +1988,12 @@ function showAlertBanner(productName, stock, alertEmail){
     banner.className = "stock-alert-banner";
     banner.innerHTML = `
         <span class="banner-text">
-            ⚠️ <strong>${productName}</strong> — solo ${stock} uds en stock
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14" style="flex-shrink:0"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            <strong>${productName}</strong> — solo ${stock} uds en stock
         </span>
         <div class="banner-actions">
-            <button class="banner-email-btn" onclick="sendAlertEmail('${productName}',${stock},'${alertEmail||''}')">📧 Avisar</button>
-            <button class="banner-close-btn" onclick="document.getElementById('stockAlertBanner').remove()">✕</button>
+            <button class="banner-email-btn" onclick="sendAlertEmail('${productName}',${stock},'${alertEmail||''}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg> Avisar</button>
+            <button class="banner-close-btn" onclick="document.getElementById('stockAlertBanner').remove()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="11" height="11"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
         </div>
     `;
     document.body.appendChild(banner);
@@ -2063,7 +2084,7 @@ if(_saveInvBtn){
 
         if(editingInventoryCard !== null){
             const c   = editingInventoryCard;
-            const icon = categoryIcons[category] || "📦";
+            const icon = categoryIcons[category] || `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M12.89 1.45l8 4A2 2 0 0 1 22 7.24v9.52a2 2 0 0 1-1.11 1.79l-8 4a2 2 0 0 1-1.78 0l-8-4A2 2 0 0 1 2 16.76V7.24a2 2 0 0 1 1.11-1.79l8-4a2 2 0 0 1 1.78 0z"/><polyline points="2.32 6.16 12 11 21.68 6.16"/><line x1="12" y1="22.76" x2="12" y2="11"/></svg>`;
             c.dataset.fullName   = name;
             c.dataset.name       = name.toLowerCase();
             c.dataset.category   = category;
@@ -2072,7 +2093,7 @@ if(_saveInvBtn){
             c.querySelector(".inv-name").textContent         = name;
             c.querySelector(".inv-category-tag").textContent = category;
             c.querySelector(".inv-price").textContent        = `$${price.toLocaleString("es-MX")}`;
-            c.querySelector(".inv-icon").textContent         = icon;
+            c.querySelector(".inv-icon").innerHTML           = icon;
             editingInventoryCard = null;
             document.querySelector("#inventoryModal h2").textContent = "Nuevo producto";
         } else {
@@ -2101,7 +2122,7 @@ function getStockColorClass(stock){
 function createInventoryCard(name, category, stock, price, alertEmail){
     const list  = document.getElementById("inventoryList");
     const isLow = stock < LOW_STOCK_THRESHOLD;
-    const icon  = categoryIcons[category] || "📦";
+    const icon  = categoryIcons[category] || `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M12.89 1.45l8 4A2 2 0 0 1 22 7.24v9.52a2 2 0 0 1-1.11 1.79l-8 4a2 2 0 0 1-1.78 0l-8-4A2 2 0 0 1 2 16.76V7.24a2 2 0 0 1 1.11-1.79l8-4a2 2 0 0 1 1.78 0z"/><polyline points="2.32 6.16 12 11 21.68 6.16"/><line x1="12" y1="22.76" x2="12" y2="11"/></svg>`;
 
     const card = document.createElement("div");
     card.className          = `inventory-card${isLow ? " low-stock-card" : ""} ${getStockColorClass(stock)}`;
@@ -2122,15 +2143,18 @@ function createInventoryCard(name, category, stock, price, alertEmail){
         </div>
         <div class="inv-card-bottom">
             <span class="inv-badge ${isLow ? "low" : ""}">
-                ${isLow ? "⚠️" : "✓"} ${stock} uds
+                ${isLow
+                    ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`
+                    : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="11" height="11"><polyline points="20 6 9 17 4 12"/></svg>`
+                } ${stock} uds
             </span>
             <div class="inv-controls">
                 <button class="stock-minus">−</button>
                 <span class="stock-display">${stock}</span>
                 <button class="stock-plus">+</button>
             </div>
-           <button class="inv-edit">✏</button>
-           <button class="inv-delete">✕</button>
+            <button class="inv-edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+            <button class="inv-delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
         </div>
     `;
 
@@ -2187,9 +2211,11 @@ function refreshCardStock(card, stock){
 
     card.querySelector(".stock-display").textContent = stock;
 
-    const badge       = card.querySelector(".inv-badge");
-    badge.className   = `inv-badge ${isLow ? "low" : ""}`;
-    badge.textContent = `${isLow ? "⚠️" : "✓"} ${stock} uds`;
+    const badge     = card.querySelector(".inv-badge");
+    badge.className = `inv-badge ${isLow ? "low" : ""}`;
+    const _svgAlert = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`;
+    const _svgCheck = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="11" height="11"><polyline points="20 6 9 17 4 12"/></svg>`;
+    badge.innerHTML = `${isLow ? _svgAlert : _svgCheck} ${stock} uds`;
 
     if(isLow) card.classList.add("low-stock-card");
     else      card.classList.remove("low-stock-card");
@@ -2293,8 +2319,11 @@ function updateDashCompras(){
 
     const pendingPOs = [...document.querySelectorAll("#ordenesList .workshop-task")]
         .filter(c => c.dataset.status !== "Recibida" && c.dataset.status !== "Cancelada");
+    const _svgOrden  = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>`;
+    const _svgMoney  = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>`;
+
     if(pendingPOs.length > 0){
-        rows.push({ icon:"📋", label:"Órdenes sin recibir", value:`${pendingPOs.length} pendiente${pendingPOs.length !== 1 ? "s" : ""}` });
+        rows.push({ icon: _svgOrden, label:"Órdenes sin recibir", value:`${pendingPOs.length} pendiente${pendingPOs.length !== 1 ? "s" : ""}` });
     }
 
     let unpaidTotal = 0;
@@ -2304,7 +2333,7 @@ function updateDashCompras(){
         unpaidTotal += items.reduce((s, i) => s + (i.quantity || 1) * (i.unitPrice || 0), 0);
     });
     if(unpaidTotal > 0){
-        rows.push({ icon:"💰", label:"Por cobrar", value:`$${unpaidTotal.toLocaleString("es-MX")}` });
+        rows.push({ icon: _svgMoney, label:"Por cobrar", value:`$${unpaidTotal.toLocaleString("es-MX")}` });
     }
 
     if(rows.length === 0){
@@ -2313,7 +2342,7 @@ function updateDashCompras(){
     }
     container.innerHTML = rows.map(r => `
         <div class="dash-vehicle-row">
-            <span style="font-size:1rem;min-width:20px;">${r.icon}</span>
+            <span style="display:flex;align-items:center;min-width:20px;">${r.icon}</span>
             <span class="dash-veh-plate" style="min-width:auto;flex:1;">${r.label}</span>
             <span class="dash-veh-owner" style="flex:none;font-weight:700;color:#f5820d;">${r.value}</span>
         </div>
@@ -2613,12 +2642,12 @@ function showCompletedBanner(taskTitle, vehicleName){
     banner.className = "stock-alert-banner";
     banner.style.cssText = "background:linear-gradient(135deg,#34c759,#30d158);box-shadow:0 6px 24px rgba(52,199,89,.35);";
     banner.innerHTML = `
-        <span class="banner-text">✅ <strong>${taskTitle}</strong> — ${vehicleName} listo para entrega</span>
+        <span class="banner-text"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15" style="flex-shrink:0"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> <strong>${taskTitle}</strong> — ${vehicleName} listo para entrega</span>
         <div class="banner-actions">
-            ${clientPhone ? `<button class="banner-email-btn" onclick="window.open('tel:${clientPhone}')">📞 Llamar</button>` : ""}
-            <button class="banner-email-btn" onclick="notifyWhatsApp('${vehicleName}','${clientPhone}')">💬 WhatsApp</button>
-            <button class="banner-email-btn" onclick="abrirFacturaDesdeTask(${JSON.stringify(vehicleName)},${JSON.stringify(taskTitle)})">📋 Factura</button>
-            <button class="banner-close-btn" onclick="document.getElementById('completedBanner').remove()">✕</button>
+            ${clientPhone ? `<button class="banner-email-btn" onclick="window.open('tel:${clientPhone}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.39 2 2 0 0 1 3.6 1.21h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 9.91a16 16 0 0 0 6.08 6.08l1.86-1.86a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg> Llamar</button>` : ""}
+            <button class="banner-email-btn" onclick="notifyWhatsApp('${vehicleName}','${clientPhone}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> WhatsApp</button>
+            <button class="banner-email-btn" onclick="abrirFacturaDesdeTask(${JSON.stringify(vehicleName)},${JSON.stringify(taskTitle)})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="2"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="11" y2="16"/></svg> Factura</button>
+            <button class="banner-close-btn" onclick="document.getElementById('completedBanner').remove()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="11" height="11"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
         </div>
     `;
     document.body.appendChild(banner);
@@ -3242,7 +3271,7 @@ saveTechnicianBtn?.addEventListener("click", () => {
         card.querySelector(".tech-name").textContent      = name;
         card.querySelector(".tech-specialty").textContent = specialty || "Sin especialidad";
         if (card.querySelector(".tech-phone"))
-            card.querySelector(".tech-phone").textContent = phone ? `📞 ${phone}` : "";
+            card.querySelector(".tech-phone").innerHTML = phone ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.39 2 2 0 0 1 3.6 1.21h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 9.91a16 16 0 0 0 6.08 6.08l1.86-1.86a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg> ${phone}` : "";
         _editingTechnicianCard = null;
         document.querySelector("#technicianModal h2").textContent = "Nuevo técnico";
     } else {
@@ -3277,9 +3306,9 @@ function createTechnicianCard(name, phone, email, specialty, notes) {
             </div>
             <div>
                 <strong class="tech-name">${name}</strong>
-                <p class="tech-specialty">🔧 ${specialty || "Sin especialidad"}</p>
-                ${phone ? `<p class="tech-phone">📞 ${phone}</p>` : ""}
-                ${email ? `<p>✉️ ${email}</p>` : ""}
+                <p class="tech-specialty" style="display:flex;align-items:center;gap:4px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg> ${specialty || "Sin especialidad"}</p>
+                ${phone ? `<p class="tech-phone" style="display:flex;align-items:center;gap:4px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.39 2 2 0 0 1 3.6 1.21h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 9.91a16 16 0 0 0 6.08 6.08l1.86-1.86a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg> ${phone}</p>` : ""}
+                ${email ? `<p style="display:flex;align-items:center;gap:4px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg> ${email}</p>` : ""}
                 ${notes ? `<p style="font-size:.75rem;color:#888">${notes}</p>` : ""}
             </div>
         </div>
@@ -3388,7 +3417,7 @@ saveSupplierBtn?.addEventListener("click", () => {
         card.querySelector(".supp-name").textContent    = name;
         card.querySelector(".supp-contact").textContent = contact || "Sin contacto";
         if (card.querySelector(".supp-phone"))
-            card.querySelector(".supp-phone").textContent = phone ? `📞 ${phone}` : "";
+            card.querySelector(".supp-phone").innerHTML = phone ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.39 2 2 0 0 1 3.6 1.21h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 9.91a16 16 0 0 0 6.08 6.08l1.86-1.86a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg> ${phone}` : "";
         _editingSupplierCard = null;
         document.querySelector("#supplierModal h2").textContent = "Nuevo proveedor";
     } else {
@@ -3427,9 +3456,9 @@ function createSupplierCard(name, contact, phone, email, address, notes) {
             <div>
                 <strong class="supp-name">${name}</strong>
                 <p class="supp-contact">${contact || "Sin contacto"}</p>
-                ${phone   ? `<p class="supp-phone">📞 ${phone}</p>` : ""}
-                ${email   ? `<p>✉️ ${email}</p>`                    : ""}
-                ${address ? `<p>📍 ${address}</p>`                   : ""}
+                ${phone   ? `<p class="supp-phone" style="display:flex;align-items:center;gap:4px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.39 2 2 0 0 1 3.6 1.21h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 9.91a16 16 0 0 0 6.08 6.08l1.86-1.86a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg> ${phone}</p>` : ""}
+                ${email   ? `<p style="display:flex;align-items:center;gap:4px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg> ${email}</p>` : ""}
+                ${address ? `<p style="display:flex;align-items:center;gap:4px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> ${address}</p>` : ""}
                 ${notes   ? `<p style="font-size:.75rem;color:#888">${notes}</p>` : ""}
             </div>
         </div>
@@ -3500,7 +3529,7 @@ function refreshTechnicianSelect() {
     const sel = document.getElementById("taskTechnicianSelect");
     if (!sel) return;
     const current = sel.value;
-    sel.innerHTML = `<option value="">👨‍🔧 Asignar técnico (opcional)</option>`;
+    sel.innerHTML = `<option value="">Asignar técnico (opcional)</option>`;
     document.querySelectorAll("#techniciansList .workshop-task").forEach(card => {
         const opt = document.createElement("option");
         opt.value = opt.textContent = card.dataset.name || "";
@@ -3575,7 +3604,7 @@ function buildPoItemRow(name = "", qty = 1, price = 0) {
         <input type="text"   class="po-item-name"  placeholder="Producto"  value="${name}"  style="flex:1;border-radius:10px;border:1.5px solid rgba(0,0,0,.08);background:white;font-size:.82rem;padding:8px 10px;outline:none;box-sizing:border-box;">
         <input type="number" class="po-item-qty"   value="${qty}"   min="1" style="width:58px;text-align:center;border-radius:10px;border:1.5px solid rgba(0,0,0,.08);background:white;font-size:.82rem;padding:8px 4px;outline:none;box-sizing:border-box;">
         <input type="number" class="po-item-price" value="${price}" min="0" placeholder="$" style="width:72px;text-align:right;border-radius:10px;border:1.5px solid rgba(0,0,0,.08);background:white;font-size:.82rem;padding:8px 4px;outline:none;box-sizing:border-box;">
-        <button type="button" class="part-remove">✕</button>
+        <button type="button" class="part-remove"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="11" height="11"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
     `;
     row.querySelector(".part-remove").addEventListener("click", () => row.remove());
     return row;
@@ -4917,4 +4946,40 @@ function generateFacturaPDF(card) {
     }
 
     doc.save(`Factura-${client.replace(/\s+/g, "-")}-${date}.pdf`);
+}
+
+/* ========================================
+   BUSCADORES — MÓDULOS COMPRAS
+======================================== */
+const _proveedoresSearch = document.getElementById("proveedoresSearch");
+if(_proveedoresSearch){
+    _proveedoresSearch.addEventListener("input", (e) => {
+        const q = e.target.value.toLowerCase().trim();
+        document.querySelectorAll("#suppliersList .workshop-task").forEach(card => {
+            const text = [card.dataset.name, card.dataset.contact, card.dataset.phone, card.dataset.email].join(" ").toLowerCase();
+            card.style.display = text.includes(q) ? "" : "none";
+        });
+    });
+}
+
+const _ordenesSearch = document.getElementById("ordenesSearch");
+if(_ordenesSearch){
+    _ordenesSearch.addEventListener("input", (e) => {
+        const q = e.target.value.toLowerCase().trim();
+        document.querySelectorAll("#ordenesList .workshop-task").forEach(card => {
+            const text = [card.dataset.supplierName, card.dataset.status, card.dataset.notes].join(" ").toLowerCase();
+            card.style.display = text.includes(q) ? "" : "none";
+        });
+    });
+}
+
+const _facturasSearch = document.getElementById("facturasSearch");
+if(_facturasSearch){
+    _facturasSearch.addEventListener("input", (e) => {
+        const q = e.target.value.toLowerCase().trim();
+        document.querySelectorAll("#facturasList .workshop-task").forEach(card => {
+            const text = [card.dataset.client, card.dataset.vehicle, card.dataset.status].join(" ").toLowerCase();
+            card.style.display = text.includes(q) ? "" : "none";
+        });
+    });
 }

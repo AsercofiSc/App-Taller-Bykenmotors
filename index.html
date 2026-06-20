@@ -141,7 +141,7 @@
             height:auto;
             box-shadow:none;
             white-space:nowrap;
-        ">👨‍🔧 Técnicos</button>
+        "display:flex;align-items:center;gap:6px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg> Técnicos</button>
 
     </div>
 
@@ -445,7 +445,7 @@
 
     <!-- BUSCADOR -->
     <div class="vp-search">
-        <input type="text" id="vehicleSearch" placeholder="🔍 Buscar vehículo, placa o dueño...">
+        <input type="text" id="vehicleSearch" placeholder="Buscar vehículo, placa o dueño...">
     </div>
     <!-- LISTAS -->
     <div class="vp-sections">
@@ -516,7 +516,7 @@
 
     <!-- BUSCADOR -->
     <div class="cp-search">
-        <input type="text" id="clientSearch" placeholder="🔍 Buscar cliente...">
+        <input type="text" id="clientSearch" placeholder="Buscar cliente...">
     </div>
 
     <!-- RECIENTES -->
@@ -686,21 +686,20 @@
 
             <select id="inventoryCategory">
                 <option value="" disabled selected>Categoría</option>
-                <option value="Filtros">🔧 Filtros</option>
-                <option value="Aceites">🛢️ Aceites y lubricantes</option>
-                <option value="Frenos">⚙️ Frenos</option>
-                <option value="Suspensión">🔩 Suspensión</option>
-                <option value="Eléctrico">⚡ Eléctrico</option>
-                <option value="Motor">🔥 Motor</option>
-                <option value="Transmisión">🔄 Transmisión</option>
-                <option value="Carrocería">🚗 Carrocería</option>
-                <option value="Otro">📦 Otro</option>
+                <option value="Filtros">Filtros</option>
+                <option value="Aceites">Aceites y lubricantes</option>
+                <option value="Frenos">Frenos</option>
+                <option value="Suspensión">Suspensión</option>
+                <option value="Eléctrico">Eléctrico</option>
+                <option value="Motor">Motor</option>
+                <option value="Transmisión">Transmisión</option>
+                <option value="Carrocería">Carrocería</option>
+                <option value="Otro">Otro</option>
             </select>
 
             <input type="number" id="inventoryStock" placeholder="Cantidad en stock" min="0">
             <input type="number" id="inventoryPrice" placeholder="Precio unitario ($)" min="0">
-            <input type="email" id="inventoryAlertEmail" placeholder="📧 Correo para alertas">
-        </div>
+            <input type="email" id="inventoryAlertEmail" placeholder="Correo para alertas de stock bajo">        </div>
 
         <button id="saveInventoryBtn">Guardar producto</button>
 
@@ -873,7 +872,7 @@
 />
 
 <select id="taskTechnicianSelect" style="width:100%;padding:12px;border-radius:12px;border:1px solid rgba(0,0,0,.1);font-size:.9rem;font-family:inherit;background:white;box-sizing:border-box;">
-    <option value="">👨‍🔧 Asignar técnico (opcional)</option>
+    <option value="">Asignar técnico (opcional)</option>
 </select>
 
 <!-- PIEZAS UTILIZADAS -->
@@ -958,6 +957,12 @@
             <p>Catálogo de proveedores</p>
         </div>
     </div>
+    <div class="vp-search">
+        <input type="text" id="proveedoresSearch" placeholder="Buscar proveedor...">
+    </div>
+    <div class="workshop-section">o de proveedores</p>
+        </div>
+    </div>
     <div class="workshop-section">
         <div class="section-header">
             <h2>Mis proveedores</h2>
@@ -975,6 +980,9 @@
             <h1>Órdenes de compra</h1>
             <p>Gestión de órdenes a proveedores</p>
         </div>
+    </div>
+    <div class="vp-search">
+        <input type="text" id="ordenesSearch" placeholder="Buscar orden o proveedor...">
     </div>
     <div class="workshop-section">
         <div class="section-header">
@@ -1016,6 +1024,9 @@
         <div class="section-header">
             <h2>Mis facturas</h2>
             <button id="addFacturaBtn">+</button>
+        </div>
+        <div class="vp-search">
+            <input type="text" id="facturasSearch" placeholder="Buscar factura o cliente...">
         </div>
         <div id="facturaFilterChips" style="display:flex;gap:8px;flex-wrap:wrap;padding:0 0 12px;">
             <button class="factura-filter" data-filter="Todos"     style="padding:5px 14px;border-radius:20px;border:1.5px solid rgba(245,130,13,.3);background:rgba(245,130,13,.1);color:#f5820d;font-size:.78rem;font-weight:600;cursor:pointer;">Todos</button>
