@@ -453,11 +453,11 @@ function showClientContactSheet(card, anchorEl){
     sheet.innerHTML = `
         <span class="contact-sheet-name">${name}</span>
         ${phone ? `
-            <button class="contact-sheet-btn" id="csClientCall">📞 Llamar</button>
-            <button class="contact-sheet-btn" id="csClientWA">💬 WhatsApp</button>
+            <button class="contact-sheet-btn" id="csClientCall"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.39 2 2 0 0 1 3.6 1.21h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 9.91a16 16 0 0 0 6.08 6.08l1.86-1.86a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg> Llamar</button>
+            <button class="contact-sheet-btn" id="csClientWA"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> WhatsApp</button>
         ` : ""}
         ${email ? `
-            <button class="contact-sheet-btn" id="csClientEmail">✉️ Enviar correo</button>
+            <button class="contact-sheet-btn" id="csClientEmail"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg> Enviar correo</button>
         ` : ""}
         ${!phone ? `<div style="padding:8px 14px;font-size:.78rem;color:#aaa;">Sin teléfono registrado</div>` : ""}
     `;
@@ -521,7 +521,7 @@ function showVehicleHistory(card){
                 ? `<p class="history-empty">Sin historial de servicios aún</p>`
                 : history.slice().reverse().map(h => `
                     <div class="history-item">
-                        <div class="history-item-icon">🔧</div>
+                        <div class="history-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></div>
                         <div class="history-item-info">
                             <span class="history-item-service">${h.service}</span>
                             <span class="history-item-date">${h.date}</span>
@@ -1049,10 +1049,10 @@ function createVehicleCard(name, target, year, plate, color, owner, date, status
             <span class="vp-card-status ${statusClass}">${statusLabel}</span>
         </div>
         <div class="vp-card-right">
-    <button class="vp-history-btn" title="Historial">🕐</button>
-    ${owner ? `<button class="vp-contact-btn" title="Contactar a ${owner}">📞</button>` : ""}
-    <button class="vp-edit-btn" title="Editar">✏</button>
-    <button class="vp-delete" title="Eliminar">✕</button>
+    <button class="vp-history-btn" title="Historial"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></button>
+    ${owner ? `<button class="vp-contact-btn" title="Contactar a ${owner}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.39 2 2 0 0 1 3.6 1.21h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 9.91a16 16 0 0 0 6.08 6.08l1.86-1.86a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg></button>` : ""}
+    <button class="vp-edit-btn" title="Editar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+    <button class="vp-delete" title="Eliminar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
 </div>
     `;
 
@@ -1891,7 +1891,7 @@ function updateDashboardStats(){
         : 0;
 
     let pending = 0;
-    document.querySelectorAll(".workshop-task").forEach(task => {
+    document.querySelectorAll("#workshopTasks .workshop-task").forEach(task => {
         if(task.querySelector(".task-select")?.value === "Pendiente") pending++;
     });
 
@@ -3560,12 +3560,12 @@ document.getElementById("poSupplierSelect")?.addEventListener("change", () => {
         .find(c => c.dataset.name === sel.value);
     if (!suppCard) { infoDiv.style.display = "none"; return; }
     const lines = [];
-    if (suppCard.dataset.contact) lines.push(`👤 ${suppCard.dataset.contact}`);
-    if (suppCard.dataset.phone)   lines.push(`📞 ${suppCard.dataset.phone}`);
-    if (suppCard.dataset.email)   lines.push(`✉️ ${suppCard.dataset.email}`);
-    if (suppCard.dataset.address) lines.push(`📍 ${suppCard.dataset.address}`);
+    if (suppCard.dataset.contact) lines.push(`<span style="display:flex;align-items:center;gap:4px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> ${suppCard.dataset.contact}</span>`);
+    if (suppCard.dataset.phone)   lines.push(`<span style="display:flex;align-items:center;gap:4px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.39 2 2 0 0 1 3.6 1.21h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 9.91a16 16 0 0 0 6.08 6.08l1.86-1.86a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg> ${suppCard.dataset.phone}</span>`);
+    if (suppCard.dataset.email)   lines.push(`<span style="display:flex;align-items:center;gap:4px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg> ${suppCard.dataset.email}</span>`);
+    if (suppCard.dataset.address) lines.push(`<span style="display:flex;align-items:center;gap:4px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> ${suppCard.dataset.address}</span>`);
     if (lines.length === 0) { infoDiv.style.display = "none"; return; }
-    infoDiv.innerHTML = lines.join("<br>");
+    infoDiv.innerHTML = lines.join("");
     infoDiv.style.display = "block";
 });
 
@@ -4605,6 +4605,7 @@ function goBackToCompras() {
     recepcionesPage?.classList.add("hidden");
     facturasPage?.classList.add("hidden");
     comprasPage.classList.remove("hidden");
+    setActiveNav(4);
     updateComprasHubStats();
 }
 
