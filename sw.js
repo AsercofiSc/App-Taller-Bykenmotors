@@ -13,7 +13,7 @@
 ============================================= */
 
 // Cambiamos a v2 para forzar al móvil a borrar el caché viejo e instalar el nuevo
-const NOMBRE_CACHE = "taller-app-v48";
+const NOMBRE_CACHE = "taller-app-v53";
 
 const ARCHIVOS = [
   "./index.html",
@@ -145,5 +145,46 @@ self.addEventListener("fetch", (evento) => {
         // ❌ No está en caché → va a buscar a internet
         return fetch(evento.request);
       })
+  );
+});
+
+/* ------------------------------------------
+   EVENTO: PUSH
+   Recibe la notificación del servidor y
+   la muestra aunque la app esté cerrada.
+------------------------------------------ */
+self.addEventListener("push", (evento) => {
+  let data = { title: "MiTaller", body: "Tienes alertas pendientes", url: "./" };
+  try {
+    if (evento.data) data = evento.data.json();
+  } catch(e) {}
+
+  evento.waitUntil(
+    self.registration.showNotification(data.title, {
+      body:  data.body,
+      icon:  "./assets/icons/icon-192.png",
+      badge: "./assets/icons/icon-192.png",
+      data:  { url: data.url || "./" }
+    })
+  );
+});
+
+/* ------------------------------------------
+   EVENTO: NOTIFICATIONCLICK
+   Abre la app cuando el usuario toca
+   la notificación.
+------------------------------------------ */
+self.addEventListener("notificationclick", (evento) => {
+  evento.notification.close();
+
+  evento.waitUntil(
+    clients.matchAll({ type: "window", includeUncontrolled: true }).then((lista) => {
+      for (const cliente of lista) {
+        if (cliente.url.includes("index.html") || cliente.url.endsWith("/")) {
+          return cliente.focus();
+        }
+      }
+      return clients.openWindow(evento.notification.data?.url || "./");
+    })
   );
 });

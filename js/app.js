@@ -1963,6 +1963,66 @@ const categoryIcons = {
     "Otro"       : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M12.89 1.45l8 4A2 2 0 0 1 22 7.24v9.52a2 2 0 0 1-1.11 1.79l-8 4a2 2 0 0 1-1.78 0l-8-4A2 2 0 0 1 2 16.76V7.24a2 2 0 0 1 1.11-1.79l8-4a2 2 0 0 1 1.78 0z"/><polyline points="2.32 6.16 12 11 21.68 6.16"/><line x1="12" y1="22.76" x2="12" y2="11"/></svg>`
 };
 
+const categoryLabels = {
+    "Filtros"    : "Filtros",
+    "Aceites"    : "Aceites y lubricantes",
+    "Frenos"     : "Frenos",
+    "Suspensión" : "Suspensión",
+    "Eléctrico"  : "Eléctrico",
+    "Motor"      : "Motor",
+    "Transmisión": "Transmisión",
+    "Carrocería" : "Carrocería",
+    "Otro"       : "Otro"
+};
+
+function setCategoryPickerValue(val) {
+    const hidden  = document.getElementById("inventoryCategory");
+    const icon    = document.getElementById("invCatIcon");
+    const label   = document.getElementById("invCatLabel");
+    const dropdown = document.getElementById("invCatDropdown");
+    if (!hidden) return;
+    hidden.value = val;
+    if (val && categoryIcons[val]) {
+        icon.innerHTML  = categoryIcons[val];
+        label.textContent = categoryLabels[val] || val;
+        label.style.color = "#111";
+    } else {
+        icon.innerHTML  = "";
+        label.textContent = "Categoría";
+        label.style.color = "";
+    }
+    dropdown?.classList.add("hidden");
+}
+
+function initCategoryPicker() {
+    const trigger  = document.getElementById("invCatTrigger");
+    const dropdown = document.getElementById("invCatDropdown");
+    if (!trigger || !dropdown) return;
+
+    // Construir opciones
+    dropdown.innerHTML = "";
+    Object.keys(categoryIcons).forEach(key => {
+        const item = document.createElement("button");
+        item.type      = "button";
+        item.className = "inv-cat-option";
+        item.dataset.value = key;
+        item.innerHTML = `<span class="inv-cat-opt-icon">${categoryIcons[key]}</span><span>${categoryLabels[key] || key}</span>`;
+        item.addEventListener("click", () => setCategoryPickerValue(key));
+        dropdown.appendChild(item);
+    });
+
+    // Toggle dropdown
+    trigger.addEventListener("click", (e) => {
+        e.stopPropagation();
+        dropdown.classList.toggle("hidden");
+    });
+
+    // Cerrar al hacer click fuera
+    document.addEventListener("click", () => dropdown.classList.add("hidden"));
+}
+
+initCategoryPicker();
+
 function requestNotifPermission(){
     if("Notification" in window && Notification.permission === "default"){
         Notification.requestPermission();
@@ -2102,6 +2162,7 @@ if(_saveInvBtn){
 
         nameEl.value  = "";
         catEl.value   = "";
+        setCategoryPickerValue("");
         stockEl.value = "";
         priceEl.value = "";
         if(emailEl) emailEl.value = "";
@@ -2185,6 +2246,7 @@ card.querySelector(".inv-edit").addEventListener("click", ()=>{
         editingInventoryCard = card;
         document.getElementById("inventoryName").value       = card.dataset.fullName;
         document.getElementById("inventoryCategory").value   = card.dataset.category;
+        setCategoryPickerValue(card.dataset.category);
         document.getElementById("inventoryStock").value      = card.dataset.stock;
         document.getElementById("inventoryPrice").value      = card.dataset.price;
         document.getElementById("inventoryAlertEmail").value = card.dataset.alertEmail;
@@ -3045,6 +3107,10 @@ function limpiarDOM(){
         const el = document.getElementById(id);
         if(el) el.textContent = "0";
     });
+    const dashComprasList = document.getElementById("dashComprasList");
+    if(dashComprasList) dashComprasList.innerHTML = "";
+    const comprasResumen = document.getElementById("comprasPendientesResumen");
+    if(comprasResumen) comprasResumen.innerHTML = "";
 }
 async function inicializarEstructurasDeUsuario() {
     _isLoading = true;
@@ -3339,10 +3405,21 @@ function createTechnicianCard(name, phone, email, specialty, notes) {
     });
 
     card.querySelector(".tech-delete-btn").addEventListener("click", () => {
-        if (!confirm(`¿Eliminar a ${name}?`)) return;
+        const tareasActivas = [...document.querySelectorAll("#workshopTasks .workshop-task")]
+            .filter(t => t.dataset.technicianName === name);
+        const aviso = tareasActivas.length > 0
+            ? `\n\n⚠️ Este técnico tiene ${tareasActivas.length} tarea${tareasActivas.length !== 1 ? "s" : ""} activa${tareasActivas.length !== 1 ? "s" : ""} asignada${tareasActivas.length !== 1 ? "s" : ""}. Quedará${tareasActivas.length !== 1 ? "n" : ""} sin técnico asignado.`
+            : "";
+        if (!confirm(`¿Eliminar a ${name}?${aviso}`)) return;
+        tareasActivas.forEach(taskCard => {
+            taskCard.dataset.technicianName = "";
+            const techP = taskCard.querySelector("p[style*='f5820d']");
+            if (techP) techP.remove();
+        });
         card.remove();
         checkEmptyState("techniciansList");
         saveTechnicians();
+        saveWorkshopTasks();
     });
 
     list.appendChild(card);
@@ -3896,14 +3973,14 @@ function buildRecepcionItemRow(name = "", qty = 1) {
         const n = card.dataset.fullName || "";
         optionsHTML += `<option value="${n}" ${n === name ? "selected" : ""}>${n}</option>`;
     });
-    optionsHTML += `<option value="__manual__" ${name && !document.querySelector(`.inventory-card[data-full-name="${name}"]`) ? "selected" : ""}>✏️ Otro producto...</option>`;
+    optionsHTML += `<option value="__manual__" ${name && !document.querySelector(`.inventory-card[data-full-name="${name}"]`) ? "selected" : ""}>+ Otro producto...</option>`;
 
     row.innerHTML = `
         <select class="part-select recep-item-select" style="flex:1;">${optionsHTML}</select>
         <input type="text" class="recep-item-manual" placeholder="Nombre" value="${name}"
             style="display:none;flex:1;min-width:0;border-radius:10px;border:1.5px solid rgba(0,0,0,.08);background:white;font-size:.82rem;padding:8px 10px;outline:none;box-sizing:border-box;">
         <input type="number" class="recep-item-qty part-qty" value="${qty}" min="1">
-        <button type="button" class="part-remove">✕</button>
+        <button type="button" class="part-remove"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="11" height="11"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
     `;
 
     // Si el nombre no existe en inventario, mostrar campo manual
@@ -4023,11 +4100,11 @@ function createRecepcionCard({ poUid = "", poRef = "", notes = "", items = [], c
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><rect x="1" y="3" width="15" height="13" rx="2"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
             </div>
             <div>
-                <strong>📦 Recepción de mercancía</strong>
+                <strong style="display:flex;align-items:center;gap:5px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg> Recepción de mercancía</strong>
                 <p class="recep-po">${poRef || "Sin orden vinculada"}</p>
                 <p class="recep-count">${items.length} producto${items.length !== 1 ? "s" : ""} recibidos</p>
                 ${notes ? `<p style="font-size:.75rem;color:#888">${notes}</p>` : ""}
-                <p style="font-size:.72rem;color:#aaa;">📅 ${date}</p>
+                <p style="font-size:.72rem;color:#aaa;display:flex;align-items:center;gap:4px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> ${date}</p>
             </div>
         </div>
         <div class="task-actions">
@@ -4168,7 +4245,7 @@ function buildFacturaItemRow(desc = "", qty = 1, price = 0) {
         <input type="text"   class="fact-item-desc"  placeholder="Servicio / concepto" value="${desc}"  style="flex:1;border-radius:10px;border:1.5px solid rgba(0,0,0,.08);background:white;font-size:.82rem;padding:8px 10px;outline:none;box-sizing:border-box;">
         <input type="number" class="fact-item-qty"   value="${qty}"   min="1" style="width:58px;text-align:center;border-radius:10px;border:1.5px solid rgba(0,0,0,.08);background:white;font-size:.82rem;padding:8px 4px;outline:none;box-sizing:border-box;">
         <input type="number" class="fact-item-price" value="${price}" min="0" placeholder="$" style="width:72px;text-align:right;border-radius:10px;border:1.5px solid rgba(0,0,0,.08);background:white;font-size:.82rem;padding:8px 4px;outline:none;box-sizing:border-box;">
-        <button type="button" class="part-remove">✕</button>
+        <button type="button" class="part-remove"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="11" height="11"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
     `;
     row.querySelector(".part-remove").addEventListener("click", () => row.remove());
     return row;
@@ -4256,7 +4333,7 @@ document.getElementById("saveFacturaBtn")?.addEventListener("click", () => {
         card.dataset.notes   = notes;
         card.dataset.items   = JSON.stringify(items);
         card.querySelector(".fact-client").textContent  = client  || "Sin cliente";
-        card.querySelector(".fact-vehicle").textContent = vehicle ? `🚗 ${vehicle}` : "";
+        card.querySelector(".fact-vehicle").innerHTML = vehicle ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11"><rect x="1" y="3" width="15" height="13" rx="2"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg> ${vehicle}` : "";
         card.querySelector(".fact-status").className    = `fact-status vp-card-status ${_getFacturaStatusClass(status)}`;
         card.querySelector(".fact-status").textContent  = status;
         card.querySelector(".fact-total").textContent   = `$${newTotal.toLocaleString("es-MX")}`;
@@ -4575,6 +4652,18 @@ document.getElementById("goFacturas")?.addEventListener("click", () => {
     comprasPage.classList.add("hidden");
     facturasPage.classList.remove("hidden");
     checkEmptyState("facturasList");
+    // Resetear chips visualmente al chip "Todos"
+    document.querySelectorAll(".factura-filter").forEach(b => {
+        b.style.background = "rgba(255,255,255,.6)";
+        b.style.color      = "#555";
+        b.style.border     = "1.5px solid rgba(0,0,0,.1)";
+    });
+    const todosChip = document.querySelector('.factura-filter[data-filter="Todos"]');
+    if (todosChip) {
+        todosChip.style.background = "rgba(245,130,13,.1)";
+        todosChip.style.color      = "#f5820d";
+        todosChip.style.border     = "1.5px solid rgba(245,130,13,.3)";
+    }
     aplicarFiltroFacturas("Todos");
 });
 
