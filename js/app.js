@@ -260,6 +260,7 @@ loginForm.addEventListener("submit", async (e) => {
         // NUEVO: Descarga la información de Supabase cuando el usuario inicia sesión
         await inicializarEstructurasDeUsuario();
         solicitarPermisoNotificaciones();
+        iniciarRealtimeSync();
         setTimeout(() => avisarPendientes(), 4000);
     }
 });
@@ -1439,11 +1440,6 @@ saveClientBtn.addEventListener("click", ()=>{
 
     if(editingClientCard !== null){
         const card = editingClientCard;
-        card.dataset.name    = name;
-        card.dataset.phone   = phone;
-        card.dataset.email   = email;
-        card.dataset.vehicle = vehicle;
-        card.dataset.source  = source;
         card.dataset.name    = name;
         card.dataset.phone   = phone;
         card.dataset.email   = email;
@@ -3143,6 +3139,7 @@ async function inicializarEstructurasDeUsuario() {
         if(_currentUserId){
             loadPersistedNotifications(_currentUserId);
             loadPersistedActivity(_currentUserId);
+            setTimeout(() => mostrarTutorial(_currentUserId), 800);
         }
     }
 }
@@ -5071,5 +5068,67 @@ if(_facturasSearch){
             const text = [card.dataset.client, card.dataset.vehicle, card.dataset.status].join(" ").toLowerCase();
             card.style.display = text.includes(q) ? "" : "none";
         });
+    });
+}
+
+/* ========================================
+   TUTORIAL ONBOARDING
+======================================== */
+function mostrarTutorial(userId) {
+    const clave = `taller_tutorial_visto_${userId}`;
+    if (localStorage.getItem(clave)) return;
+
+    const overlay  = document.getElementById("tutorialOverlay");
+    const steps    = document.querySelectorAll(".tutorial-step");
+    const dots     = document.querySelectorAll(".tutorial-dot");
+    const nextBtn  = document.getElementById("tutNextBtn");
+    const skipBtn  = document.getElementById("tutSkipBtn");
+    const actions  = document.getElementById("tutActions");
+
+    if (!overlay) return;
+
+    let current = 0;
+    const total = steps.length;
+
+    overlay.classList.remove("hidden");
+
+    function irA(n) {
+        steps[current].style.display = "none";
+        dots[current].classList.remove("active");
+        current = n;
+        steps[current].style.display = "flex";
+        steps[current].style.flexDirection = "column";
+        steps[current].style.alignItems = "center";
+        dots[current].classList.add("active");
+
+        const esUltimo = current === total - 1;
+        nextBtn.style.display  = esUltimo ? "none" : "";
+        skipBtn.textContent    = esUltimo ? "Cerrar" : "Saltar";
+
+        if (esUltimo && !document.getElementById("tutFinishBtn")) {
+            const btn = document.createElement("button");
+            btn.id        = "tutFinishBtn";
+            btn.className = "tutorial-btn-finish";
+            btn.textContent = "¡Empezar!";
+            btn.addEventListener("click", cerrar);
+            actions.appendChild(btn);
+        }
+    }
+
+    function cerrar() {
+        localStorage.setItem(clave, "1");
+        overlay.classList.add("hidden");
+    }
+
+    nextBtn.addEventListener("click", () => {
+        if (current < total - 1) irA(current + 1);
+    });
+
+    skipBtn.addEventListener("click", () => {
+        if (current === total - 1) {
+            cerrar();
+        } else {
+            irA(total - 1);
+        }
     });
 }
