@@ -1,5 +1,17 @@
 [build]
   functions = "netlify/functions"
 
+[build.environment]
+  SECRETS_SCAN_OMIT_PATHS = "js/supabase-config.js"
+
+[[plugins]]
+  package = "@netlify/plugin-functions-install-core"
+
 [functions."daily-reminders"]
   schedule = "0 15 * * *"
+
+[functions."daily-reminders-tarde"]
+  schedule = "0 20 * * *"
+
+[functions."daily-reminders-noche"]
+  schedule = "0 2 * * *"
