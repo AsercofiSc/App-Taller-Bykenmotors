@@ -37,7 +37,10 @@ let _activityData  = [];   // store persistente de actividad
 const TALLER_CONFIG = {
     name:    "Mi Taller Mecánico",              // Nombre que aparece en los PDFs
     tagline: "Servicio automotriz profesional", // Subtítulo (puede quedar vacío "")
-    logoUrl: ""                                 // URL de imagen del logo (puede quedar vacío "")
+    logoUrl: "",                                // URL de imagen del logo (puede quedar vacío "")
+    alertHour: "09:00",                         // Hora preferida para alertas push
+    lowStockThreshold: 5,                       // Umbral de stock bajo
+    taxRate: 0                                  // % de IVA en facturas
 };
 /* ── TOAST DE GUARDADO ── */
 let _saveCount = 0;
@@ -1051,6 +1054,7 @@ function createVehicleCard(name, target, year, plate, color, owner, date, status
         </div>
         <div class="vp-card-right">
     <button class="vp-history-btn" title="Historial"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></button>
+    <button class="vp-checklist-btn" title="Checklist de recepción"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg></button>
     ${owner ? `<button class="vp-contact-btn" title="Contactar a ${owner}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.39 2 2 0 0 1 3.6 1.21h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 9.91a16 16 0 0 0 6.08 6.08l1.86-1.86a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg></button>` : ""}
     <button class="vp-edit-btn" title="Editar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
     <button class="vp-delete" title="Eliminar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
@@ -1083,6 +1087,11 @@ function createVehicleCard(name, target, year, plate, color, owner, date, status
     e.stopPropagation();
     showVehicleHistory(card);
 });
+
+    card.querySelector(".vp-checklist-btn")?.addEventListener("click", (e) => {
+        e.stopPropagation();
+        abrirChecklist(card.dataset.uid);
+    });
 
     card.querySelector(".vp-delete").addEventListener("click", ()=>{
         if(!confirm(`¿Eliminar ${name}?`)) return;
@@ -4292,6 +4301,8 @@ document.getElementById("addFacturaBtn")?.addEventListener("click", () => {
     if (facturaStatusInput) facturaStatusInput.value     = "Borrador";
     document.getElementById("facturaItemsList").innerHTML = "";
     document.getElementById("facturaNotes").value         = "";
+    document.getElementById("facturaPaymentMethod").value = "";
+    document.getElementById("facturaAdvanceAmount").value = "";
     document.getElementById("facturaItemsBody")?.classList.remove("open");
     document.getElementById("facturaItemsArrow")?.classList.remove("open");
     document.getElementById("facturaModal").classList.remove("hidden");
@@ -4305,7 +4316,9 @@ document.getElementById("closeFacturaModal")?.addEventListener("click", () => {
 document.getElementById("saveFacturaBtn")?.addEventListener("click", () => {
     const client  = document.getElementById("facturaClientSelect").value.trim();
     const vehicle = document.getElementById("facturaVehicleSelect").value.trim();
-    const status  = facturaStatusInput?.value || "Borrador";
+    const status        = facturaStatusInput?.value || "Borrador";
+    const paymentMethod  = document.getElementById("facturaPaymentMethod")?.value || "";
+    const advanceAmount  = parseFloat(document.getElementById("facturaAdvanceAmount")?.value) || 0;
     const notes   = document.getElementById("facturaNotes").value.trim();
 
     const items = [];
@@ -4328,12 +4341,20 @@ document.getElementById("saveFacturaBtn")?.addEventListener("click", () => {
         card.dataset.vehicle = vehicle;
         card.dataset.status  = status;
         card.dataset.notes   = notes;
+        card.dataset.paymentMethod = paymentMethod;
+        card.dataset.advanceAmount = advanceAmount;
         card.dataset.items   = JSON.stringify(items);
         card.querySelector(".fact-client").textContent  = client  || "Sin cliente";
         card.querySelector(".fact-vehicle").innerHTML = vehicle ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11"><rect x="1" y="3" width="15" height="13" rx="2"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg> ${vehicle}` : "";
         card.querySelector(".fact-status").className    = `fact-status vp-card-status ${_getFacturaStatusClass(status)}`;
         card.querySelector(".fact-status").textContent  = status;
         card.querySelector(".fact-total").textContent   = `$${newTotal.toLocaleString("es-MX")}`;
+        const editBalanceEl = card.querySelector(".fact-balance");
+        if (editBalanceEl) {
+            const pendiente = Math.max(0, newTotal - advanceAmount);
+            editBalanceEl.textContent = advanceAmount > 0 ? `Saldo pendiente: $${pendiente.toLocaleString("es-MX")}` : "";
+            editBalanceEl.style.display = advanceAmount > 0 ? "" : "none";
+        }
 
         if(oldStatus !== "Pagada" && status === "Pagada"){
             const total = items.reduce((s, i) => s + (i.quantity || 1) * (i.unitPrice || 0), 0);
@@ -4352,7 +4373,7 @@ document.getElementById("saveFacturaBtn")?.addEventListener("click", () => {
                 .find(c => (c.dataset.fullName || "").toLowerCase() === item.description.toLowerCase());
             if(match) deductInventoryStock(item.description, item.quantity || 1);
         });
-        createFacturaCard({ client, vehicle, status, notes, items });
+        createFacturaCard({ client, vehicle, status, notes, items, paymentMethod, advanceAmount });
     }
 
     document.getElementById("facturaModal").classList.add("hidden");
@@ -4367,7 +4388,7 @@ function _getFacturaStatusClass(status) {
     return "status-ingresado";
 }
 
-function createFacturaCard({ client = "", vehicle = "", status = "Borrador", notes = "", items = [], createdAt = "" }) {
+function createFacturaCard({ client = "", vehicle = "", status = "Borrador", notes = "", items = [], createdAt = "", paymentMethod = "", advanceAmount = 0 }) {
     const list = document.getElementById("facturasList");
     if (!list) return;
 
@@ -4382,6 +4403,8 @@ function createFacturaCard({ client = "", vehicle = "", status = "Borrador", not
     card.dataset.notes   = notes;
     card.dataset.items   = JSON.stringify(items);
     card.dataset.createdAt = createdAt || new Date().toISOString();
+    card.dataset.paymentMethod = paymentMethod;
+    card.dataset.advanceAmount = advanceAmount;
 
     card.innerHTML = `
         <div class="workshop-task-row">
@@ -4395,6 +4418,8 @@ function createFacturaCard({ client = "", vehicle = "", status = "Borrador", not
                 </p>
                 <p><span class="fact-status vp-card-status ${_getFacturaStatusClass(status)}">${status}</span></p>
                 <p class="fact-total" style="font-weight:700;color:#111;">$${total.toLocaleString("es-MX")}</p>
+                ${paymentMethod ? `<p class="fact-payment" style="font-size:.72rem;color:#666;display:flex;align-items:center;gap:4px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg> ${paymentMethod}</p>` : ""}
+                <p class="fact-balance" style="font-size:.72rem;color:#c0392b;font-weight:600;${advanceAmount > 0 ? "" : "display:none;"}">Saldo pendiente: $${Math.max(0, total - advanceAmount).toLocaleString("es-MX")}</p>
                 <p style="font-size:.72rem;color:#aaa;display:flex;align-items:center;gap:4px;">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
                     ${date}
@@ -4432,6 +4457,8 @@ function createFacturaCard({ client = "", vehicle = "", status = "Borrador", not
         if (facturaStatusBtn)   facturaStatusBtn.textContent = card.dataset.status || "Borrador";
         if (facturaStatusInput) facturaStatusInput.value     = card.dataset.status || "Borrador";
         document.getElementById("facturaNotes").value = card.dataset.notes || "";
+        document.getElementById("facturaPaymentMethod").value = card.dataset.paymentMethod || "";
+        document.getElementById("facturaAdvanceAmount").value = card.dataset.advanceAmount || "";
         const itemsData = JSON.parse(card.dataset.items || "[]");
         const itemsList = document.getElementById("facturaItemsList");
         itemsList.innerHTML = "";
@@ -4468,7 +4495,7 @@ async function saveFacturas() {
         for (const card of cards) {
             const { data: inserted, error } = await _supabase
                 .from("invoices")
-                .insert({ user_id: uid, client_name: card.dataset.client || "", vehicle_name: card.dataset.vehicle || "", status: card.dataset.status || "Borrador", notes: card.dataset.notes || "" })
+                .insert({ user_id: uid, client_name: card.dataset.client || "", vehicle_name: card.dataset.vehicle || "", status: card.dataset.status || "Borrador", notes: card.dataset.notes || "", payment_method: card.dataset.paymentMethod || "", advance_amount: parseFloat(card.dataset.advanceAmount) || 0 })
                 .select();
             if (error) throw error;
 
@@ -4510,7 +4537,7 @@ async function loadInvoices() {
             const invItems = (items || [])
                 .filter(i => i.invoice_id === inv.id)
                 .map(i => ({ description: i.description, quantity: i.quantity, unitPrice: i.unit_price }));
-createFacturaCard({ client: inv.client_name || "", vehicle: inv.vehicle_name || "", status: inv.status, notes: inv.notes, items: invItems, createdAt: inv.created_at });        });
+createFacturaCard({ client: inv.client_name || "", vehicle: inv.vehicle_name || "", status: inv.status, notes: inv.notes, items: invItems, createdAt: inv.created_at, paymentMethod: inv.payment_method || "", advanceAmount: inv.advance_amount || 0 });        });
     } catch (e) {
         console.error("Error cargando facturas:", e);
     }
@@ -4737,23 +4764,29 @@ async function loadTallerConfig() {
         TALLER_CONFIG.name    = data.name     || TALLER_CONFIG.name;
         TALLER_CONFIG.tagline = data.tagline  || TALLER_CONFIG.tagline;
         TALLER_CONFIG.logoUrl = data.logo_url || TALLER_CONFIG.logoUrl;
+        TALLER_CONFIG.alertHour          = data.alert_hour          || TALLER_CONFIG.alertHour;
+        TALLER_CONFIG.lowStockThreshold  = data.low_stock_threshold || TALLER_CONFIG.lowStockThreshold;
+        TALLER_CONFIG.taxRate            = (data.tax_rate ?? TALLER_CONFIG.taxRate);
     } catch (e) {
         console.error("Error cargando configuración del taller:", e);
     }
 }
 
-async function saveTallerConfig(name, tagline, logoUrl) {
+async function saveTallerConfig(name, tagline, logoUrl, alertHour, lowStockThreshold, taxRate) {
     try {
         const { data: { session } } = await _supabase.auth.getSession();
         if (!session) return;
         const uid = session.user.id;
         await _supabase.from("taller_config").upsert(
-            { user_id: uid, name, tagline, logo_url: logoUrl },
+            { user_id: uid, name, tagline, logo_url: logoUrl, alert_hour: alertHour, low_stock_threshold: lowStockThreshold, tax_rate: taxRate },
             { onConflict: "user_id" }
         );
         TALLER_CONFIG.name    = name;
         TALLER_CONFIG.tagline = tagline;
         TALLER_CONFIG.logoUrl = logoUrl;
+        TALLER_CONFIG.alertHour         = alertHour;
+        TALLER_CONFIG.lowStockThreshold = lowStockThreshold;
+        TALLER_CONFIG.taxRate           = taxRate;
     } catch (e) {
         console.error("Error guardando configuración del taller:", e);
     }
@@ -4763,6 +4796,9 @@ document.getElementById("openTallerConfigBtn")?.addEventListener("click", () => 
     document.getElementById("configTallerName").value    = TALLER_CONFIG.name    || "";
     document.getElementById("configTallerTagline").value = TALLER_CONFIG.tagline || "";
     document.getElementById("configTallerLogo").value    = TALLER_CONFIG.logoUrl || "";
+    document.getElementById("configAlertHour").value          = TALLER_CONFIG.alertHour         || "09:00";
+    document.getElementById("configLowStockThreshold").value  = TALLER_CONFIG.lowStockThreshold  || 5;
+    document.getElementById("configTaxRate").value            = TALLER_CONFIG.taxRate ?? 0;
     document.getElementById("tallerConfigModal").classList.remove("hidden");
 });
 
@@ -4774,9 +4810,98 @@ document.getElementById("saveTallerConfigBtn")?.addEventListener("click", async 
     const name    = document.getElementById("configTallerName").value.trim()    || "Mi Taller Mecánico";
     const tagline = document.getElementById("configTallerTagline").value.trim();
     const logoUrl = document.getElementById("configTallerLogo").value.trim();
-    await saveTallerConfig(name, tagline, logoUrl);
+    const alertHour         = document.getElementById("configAlertHour").value || "09:00";
+    const lowStockThreshold = parseInt(document.getElementById("configLowStockThreshold").value) || 5;
+    const taxRate            = parseFloat(document.getElementById("configTaxRate").value) || 0;
+    await saveTallerConfig(name, tagline, logoUrl, alertHour, lowStockThreshold, taxRate);
     document.getElementById("tallerConfigModal").classList.add("hidden");
     showSaveToast("ok");
+});
+
+/* ========================================
+   CHECKLIST DE RECEPCIÓN DE VEHÍCULO
+======================================== */
+let _checklistVehicleUid = null;
+
+async function abrirChecklist(uid) {
+    if (!uid) { alert("Guarda el vehículo primero."); return; }
+    _checklistVehicleUid = uid;
+
+    document.getElementById("checklistFuelLevel").value   = "";
+    document.getElementById("checklistMileage").value     = "";
+    document.getElementById("checklistSpareTire").checked = false;
+    document.getElementById("checklistJack").checked      = false;
+    document.getElementById("checklistTools").checked     = false;
+    document.getElementById("checklistRadio").checked     = false;
+    document.getElementById("checklistValuables").value   = "";
+    document.getElementById("checklistDamage").value      = "";
+    document.getElementById("checklistNotes").value       = "";
+
+    try {
+        const { data: { session } } = await _supabase.auth.getSession();
+        if (session) {
+            const { data } = await _supabase
+                .from("vehicle_checklist")
+                .select("*")
+                .eq("user_id", session.user.id)
+                .eq("vehicle_uid", uid)
+                .maybeSingle();
+            if (data) {
+                document.getElementById("checklistFuelLevel").value   = data.fuel_level || "";
+                document.getElementById("checklistMileage").value     = data.mileage || "";
+                document.getElementById("checklistSpareTire").checked = !!data.has_spare_tire;
+                document.getElementById("checklistJack").checked      = !!data.has_jack;
+                document.getElementById("checklistTools").checked     = !!data.has_tools;
+                document.getElementById("checklistRadio").checked     = !!data.has_radio;
+                document.getElementById("checklistValuables").value   = data.valuables || "";
+                document.getElementById("checklistDamage").value      = data.damage_notes || "";
+                document.getElementById("checklistNotes").value       = data.general_notes || "";
+            }
+        }
+    } catch (e) {
+        console.error("Error cargando checklist:", e);
+    }
+
+    document.getElementById("checklistModal").classList.remove("hidden");
+}
+
+document.getElementById("closeChecklistModal")?.addEventListener("click", () => {
+    document.getElementById("checklistModal").classList.add("hidden");
+    _checklistVehicleUid = null;
+});
+
+document.getElementById("saveChecklistBtn")?.addEventListener("click", async () => {
+    if (!_checklistVehicleUid) { alert("Vehículo no identificado."); return; }
+    try {
+        const { data: { session } } = await _supabase.auth.getSession();
+        if (!session) return;
+
+        const payload = {
+            user_id: session.user.id,
+            vehicle_uid: _checklistVehicleUid,
+            fuel_level: document.getElementById("checklistFuelLevel").value || "",
+            mileage: parseInt(document.getElementById("checklistMileage").value) || 0,
+            has_spare_tire: document.getElementById("checklistSpareTire").checked,
+            has_jack: document.getElementById("checklistJack").checked,
+            has_tools: document.getElementById("checklistTools").checked,
+            has_radio: document.getElementById("checklistRadio").checked,
+            valuables: document.getElementById("checklistValuables").value.trim(),
+            damage_notes: document.getElementById("checklistDamage").value.trim(),
+            general_notes: document.getElementById("checklistNotes").value.trim()
+        };
+
+        const { error } = await _supabase
+            .from("vehicle_checklist")
+            .upsert(payload, { onConflict: "user_id,vehicle_uid" });
+        if (error) throw error;
+
+        showSaveToast("ok");
+        document.getElementById("checklistModal").classList.add("hidden");
+        _checklistVehicleUid = null;
+    } catch (e) {
+        console.error("Error guardando checklist:", e);
+        showSaveToast("error");
+    }
 });
 /* ========================================
    ALERTAS PUSH — PENDIENTES DEL DÍA

@@ -3316,8 +3316,58 @@ background-image: url('../assets/img/fondo-menu.png');
     flex-shrink: 0;
 }
 
+.vp-delete{
+    padding: 0;
+}
+
 .vp-delete:hover{
     background: rgba(255,59,48,.20);
+    transform: scale(1.05);
+}
+
+.vp-edit-btn{
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+    padding: 0;
+    border: none;
+    border-radius: 8px;
+    background: rgba(10,132,255,.10);
+    color: #0a84ff;
+    font-size: .75rem;
+    cursor: pointer;
+    transition: .2s;
+    box-shadow: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.vp-edit-btn:hover{
+    background: rgba(10,132,255,.20);
+    transform: scale(1.05);
+}
+
+.vp-checklist-btn{
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+    padding: 0;
+    border: none;
+    border-radius: 8px;
+    background: rgba(175,82,222,.10);
+    color: #af52de;
+    font-size: .75rem;
+    cursor: pointer;
+    transition: .2s;
+    box-shadow: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.vp-checklist-btn:hover{
+    background: rgba(175,82,222,.20);
     transform: scale(1.05);
 }
 

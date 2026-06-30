@@ -1167,6 +1167,13 @@
                 </div>
             </div>
             <input type="hidden" id="facturaStatus" value="Borrador">
+            <select id="facturaPaymentMethod">
+                <option value="">Método de pago (opcional)</option>
+                <option value="Efectivo">Efectivo</option>
+                <option value="Transferencia">Transferencia</option>
+                <option value="Tarjeta">Tarjeta</option>
+            </select>
+            <input type="number" id="facturaAdvanceAmount" placeholder="Anticipo recibido (opcional)" min="0" step="0.01">
             <div class="parts-section">
                 <button type="button" id="facturaItemsToggleBtn" class="parts-toggle">
                     <span>Conceptos</span>
@@ -1216,10 +1223,59 @@
             <input type="text" id="configTallerName" placeholder="Nombre del taller">
             <input type="text" id="configTallerTagline" placeholder="Subtítulo (ej. Servicio automotriz profesional)">
             <input type="text" id="configTallerLogo" placeholder="URL del logo (opcional)">
+            <hr style="border:none;border-top:1px solid rgba(0,0,0,.08);margin:6px 0;">
+            <label style="font-size:.78rem;color:#888;display:flex;align-items:center;gap:6px;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                Hora de alertas diarias
+            </label>
+            <input type="time" id="configAlertHour" value="09:00">
+            <label style="font-size:.78rem;color:#888;display:flex;align-items:center;gap:6px;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M20.59 13.41 11 3.83A2 2 0 0 0 9.59 3.41H4a1 1 0 0 0-1 1v5.59a2 2 0 0 0 .59 1.41l9.58 9.58a2 2 0 0 0 2.83 0l5.59-5.59a2 2 0 0 0 0-2.83z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg>
+                Umbral de stock bajo
+            </label>
+            <input type="number" id="configLowStockThreshold" placeholder="Ej. 5" min="1" value="5">
+            <label style="font-size:.78rem;color:#888;display:flex;align-items:center;gap:6px;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                IVA / impuesto en facturas (%)
+            </label>
+            <input type="number" id="configTaxRate" placeholder="Ej. 16 (déjalo en 0 si no aplicas IVA)" min="0" max="100" step="0.01" value="0">
         </div>
         <button id="saveTallerConfigBtn">Guardar configuración</button>
     </div>
 </div>
+<!-- MODAL CHECKLIST DE RECEPCIÓN -->
+<div id="checklistModal" class="vehicle-modal hidden">
+    <div class="vehicle-modal-card">
+        <div class="vehicle-modal-top">
+            <div class="modal-title-row">
+                <button id="closeChecklistModal" class="modal-back-btn">←</button>
+                <h2>Checklist de recepción</h2>
+            </div>
+        </div>
+        <div class="vehicle-form">
+            <select id="checklistFuelLevel">
+                <option value="">Nivel de gasolina</option>
+                <option value="Vacío">Vacío</option>
+                <option value="1/4">1/4</option>
+                <option value="1/2">1/2</option>
+                <option value="3/4">3/4</option>
+                <option value="Lleno">Lleno</option>
+            </select>
+            <input type="number" id="checklistMileage" placeholder="Kilometraje de entrada" min="0">
+            <div style="display:flex;flex-wrap:wrap;gap:12px;padding:10px 4px;">
+                <label style="display:flex;align-items:center;gap:6px;font-size:.85rem;color:#444;"><input type="checkbox" id="checklistSpareTire"> Llanta de refacción</label>
+                <label style="display:flex;align-items:center;gap:6px;font-size:.85rem;color:#444;"><input type="checkbox" id="checklistJack"> Gato</label>
+                <label style="display:flex;align-items:center;gap:6px;font-size:.85rem;color:#444;"><input type="checkbox" id="checklistTools"> Herramientas</label>
+                <label style="display:flex;align-items:center;gap:6px;font-size:.85rem;color:#444;"><input type="checkbox" id="checklistRadio"> Radio/Estéreo</label>
+            </div>
+            <textarea id="checklistValuables" placeholder="Objetos de valor (lentes, documentos, etc.)" rows="2" style="resize:none;width:100%;padding:12px;border-radius:12px;border:1px solid rgba(0,0,0,.1);font-size:.9rem;font-family:inherit;box-sizing:border-box;"></textarea>
+            <textarea id="checklistDamage" placeholder="Daños / rayones existentes" rows="2" style="resize:none;width:100%;padding:12px;border-radius:12px;border:1px solid rgba(0,0,0,.1);font-size:.9rem;font-family:inherit;box-sizing:border-box;"></textarea>
+            <textarea id="checklistNotes" placeholder="Notas generales" rows="2" style="resize:none;width:100%;padding:12px;border-radius:12px;border:1px solid rgba(0,0,0,.1);font-size:.9rem;font-family:inherit;box-sizing:border-box;"></textarea>
+        </div>
+        <button id="saveChecklistBtn">Guardar checklist</button>
+    </div>
+</div>
+
 <!-- SUPABASE -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
